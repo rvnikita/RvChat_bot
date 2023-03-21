@@ -1,0 +1,1 @@
+dispatcher: python3 src/dispatcher.py
