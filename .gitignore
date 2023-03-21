@@ -1,0 +1,12 @@
+# Ignore Mac system files
+.DS_store
+.idea/
+
+# Ignore files related to API keys
+.venv
+
+# Ignore all pytest_cache directories
+**/.pytest_cache
+
+# Ignore session files
+**/.session*
