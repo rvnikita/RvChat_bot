@@ -58,15 +58,15 @@ async def on_new_message(event):
         # For now debug only on my account
         return
 
-    await event.respond('/typing')
+    await client.send_action(event.chat_id, action=types.SendMessageTypingAction())
 
-    conversation_history = await get_last_x_messages(client, event.chat_id, 10)
+    conversation_history = await get_last_x_messages(client, event.chat_id, 20)
 
-    await event.respond('/typing')
+    await client.send_action(event.chat_id, action=types.SendMessageTypingAction())
 
     response = await generate_response(conversation_history)
 
-    await event.reply(response)
+    await client.send_message(event.chat_id, response)
 
 
 async def main():
