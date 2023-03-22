@@ -59,6 +59,9 @@ async def on_new_message(event):
         if event.chat_id != 88834504:
             # For now debug only on my account
             return
+        elif event.text == '/clear':
+            await client.send_message(event.chat_id, "Clearing conversation history")
+            return
 
         async with client.action(event.chat_id, 'typing'):
             conversation_history = await get_last_x_messages(client, event.chat_id, 500)
