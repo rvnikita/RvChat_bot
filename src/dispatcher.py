@@ -10,6 +10,8 @@ API_HASH = os.environ['API_HASH']
 PHONE_NUMBER = os.environ['PHONE_NUMBER']
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
 TELEGRAM_SESSION_STRING = os.environ['TELEGRAM_SESSION_STRING']
+#TODO:MED: rewrite this with logging module
+LOGGING_CHAT_ID = int(os.environ['LOGGING_CHAT_ID'])
 
 openai.api_key = OPENAI_API_KEY
 client = TelegramClient(StringSession(TELEGRAM_SESSION_STRING), API_ID, API_HASH)
@@ -27,7 +29,7 @@ async def generate_response(conversation_history):
             prompt.append({"role": "user", "content": message.text})
 
     # temporary log to admin
-    await client.send_message(88834504, json.dumps(prompt, indent=4))
+    await client.send_message(LOGGING_CHAT_ID, json.dumps(prompt, indent=4))
 
     response = openai.ChatCompletion.create(
         model="gpt-4",
@@ -73,7 +75,7 @@ async def on_new_message(event):
 
         await client.send_message(event.chat_id, response)
     except Exception as e:
-        await client.send_message(event.chat_id, f"Error: {e}")
+        await client.send_message(LOGGING_CHAT_ID, f"Error: {e}")
 
 async def main():
     # Initialize the Telegram client
