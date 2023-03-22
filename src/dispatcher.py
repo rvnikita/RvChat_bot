@@ -26,7 +26,7 @@ async def generate_response(conversation_history):
             prompt.append({"role": "user", "content": message.text})
 
     # temporary log to admin
-    client.send_message(88834504, prompt)
+    await client.send_message(88834504, prompt)
 
     response = openai.ChatCompletion.create(
         model="gpt-4",
