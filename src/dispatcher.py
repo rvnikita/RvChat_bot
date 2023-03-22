@@ -55,7 +55,7 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
         else:
             break
 
-    return messages[::-1]
+    return reversed(messages[::-1])
 
 async def on_new_message(event):
     try:
