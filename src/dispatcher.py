@@ -1,8 +1,11 @@
+import src.db_helper as db_helper
+
 import os
 from telethon import TelegramClient, events, types
 from telethon.sessions import StringSession
 import openai
 import json
+
 
 # Get API credentials from environment variables
 API_ID = os.environ['API_ID']
@@ -16,10 +19,13 @@ LOGGING_CHAT_ID = int(os.environ['LOGGING_CHAT_ID'])
 openai.api_key = OPENAI_API_KEY
 client = TelegramClient(StringSession(TELEGRAM_SESSION_STRING), API_ID, API_HASH)
 
-async def generate_response(conversation_history):
+async def generate_response(conversation_history, preprompt = None):
     me = await client.get_me()
 
     prompt = []
+
+    if preprompt:
+        prompt.append({"role": "system", "content": preprompt})
 
     #loop through the conversation history
     for message in conversation_history:
@@ -71,7 +77,20 @@ async def on_new_message(event):
 
         async with client.action(event.chat_id, 'typing'):
             conversation_history = await get_last_x_messages(client, event.chat_id, 500)
-            response = await generate_response(conversation_history)
+
+            #select preprompt form db for this user
+            user = db_helper.session.query(db_helper.User).filter_by(id=event.sender_id).first()
+            if user is None:
+                user = db_helper.User(id=event.sender_id, username=event.sender.username, first_name=event.sender.first_name, last_name=event.sender.last_name, status='active', preprompt='')
+                db_helper.session.add(user)
+                db_helper.session.commit()
+
+                preprompt = None
+            else:
+                preprompt = user.preprompt
+
+
+            response = await generate_response(conversation_history, preprompt)
 
         await client.send_message(event.chat_id, response)
     except Exception as e:

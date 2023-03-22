@@ -1,2 +1,4 @@
 telethon
 openai
+sqlalchemy
+psycopg2
