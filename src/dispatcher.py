@@ -20,7 +20,7 @@ async def generate_response(conversation_history):
     prompt = []
 
     #loop through the conversation history
-    for message in reversed(conversation_history):
+    for message in conversation_history:
         if message.sender == me: #from bot
             prompt.append({"role": "assistant", "content": message.text})
         else:
@@ -55,7 +55,7 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
         else:
             break
 
-    return reversed(messages[::-1])
+    return messages[::-1]
 
 async def on_new_message(event):
     try:
