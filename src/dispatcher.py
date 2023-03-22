@@ -34,14 +34,25 @@ async def generate_response(conversation_history):
     reply_text = response.choices[0].message.content.strip()
     return reply_text
 
-async def get_last_x_messages(client, channel_id, limit):
-    # Get the channel entity
+async def get_last_x_messages(client, channel_id, max_tokens = 4000):
     channel = await client.get_entity(channel_id)
 
-    # Fetch the last `limit` messages from the channel
-    messages = await client.get_messages(channel, limit=limit)
+    # Fetch messages until '/clear' or until max tokens
+    messages = []
+    total_tokens = 0
+    min_id = None
 
-    return messages
+    async for msg in client.iter_messages(channel):
+        if msg.text == '/clear':
+            break
+        if total_tokens + len(msg.text) <= max_tokens:
+            messages.append(msg)
+            total_tokens += len(msg.text)
+            min_id = msg.id
+        else:
+            break
+
+    return messages[::-1]
 
 async def on_new_message(event):
     try:
@@ -50,7 +61,7 @@ async def on_new_message(event):
             return
 
         async with client.action(event.chat_id, 'typing'):
-            conversation_history = await get_last_x_messages(client, event.chat_id, 20)
+            conversation_history = await get_last_x_messages(client, event.chat_id, 500)
             response = await generate_response(conversation_history)
 
         await client.send_message(event.chat_id, response)
