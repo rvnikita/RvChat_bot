@@ -1,5 +1,6 @@
 import os
-from telethon import TelegramClient, events
+from telethon import TelegramClient, events, types
+from telethon.sessions import StringSession
 import openai
 
 # Get API credentials from environment variables
@@ -7,9 +8,10 @@ API_ID = os.environ['API_ID']
 API_HASH = os.environ['API_HASH']
 PHONE_NUMBER = os.environ['PHONE_NUMBER']
 OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
+TELEGRAM_SESSION_STRING = os.environ['TELEGRAM_SESSION_STRING']
 
 openai.api_key = OPENAI_API_KEY
-client = TelegramClient('my_user_account', API_ID, API_HASH)
+client = TelegramClient(StringSession(TELEGRAM_SESSION_STRING), API_ID, API_HASH)
 
 async def generate_response(conversation_history):
     me = await client.get_me()
@@ -58,23 +60,18 @@ async def on_new_message(event):
         # For now debug only on my account
         return
 
-    await client.send_action(event.chat_id, action=types.SendMessageTypingAction())
-
-    conversation_history = await get_last_x_messages(client, event.chat_id, 20)
-
-    await client.send_action(event.chat_id, action=types.SendMessageTypingAction())
-
-    response = await generate_response(conversation_history)
+    async with client.action(event.chat_id, 'typing'):
+        conversation_history = await get_last_x_messages(client, event.chat_id, 20)
+        response = await generate_response(conversation_history)
 
     await client.send_message(event.chat_id, response)
-
 
 async def main():
     # Initialize the Telegram client
     # Connect and sign in using the phone number
-    await client.start(PHONE_NUMBER)
 
-    # Register the event handler
+    await client.start()
+
     client.add_event_handler(on_new_message, events.NewMessage)
 
     # channel_id = 88834504
