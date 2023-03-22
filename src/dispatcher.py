@@ -44,15 +44,18 @@ async def get_last_x_messages(client, channel_id, limit):
     return messages
 
 async def on_new_message(event):
-    if event.chat_id != 88834504:
-        # For now debug only on my account
-        return
+    try:
+        if event.chat_id != 88834504:
+            # For now debug only on my account
+            return
 
-    async with client.action(event.chat_id, 'typing'):
-        conversation_history = await get_last_x_messages(client, event.chat_id, 20)
-        response = await generate_response(conversation_history)
+        async with client.action(event.chat_id, 'typing'):
+            conversation_history = await get_last_x_messages(client, event.chat_id, 20)
+            response = await generate_response(conversation_history)
 
-    await client.send_message(event.chat_id, response)
+        await client.send_message(event.chat_id, response)
+    except Exception as e:
+        client.send_message(event.chat_id, f"Error: {e}")
 
 async def main():
     # Initialize the Telegram client
