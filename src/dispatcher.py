@@ -2,6 +2,7 @@ import os
 from telethon import TelegramClient, events, types
 from telethon.sessions import StringSession
 import openai
+import json
 
 # Get API credentials from environment variables
 API_ID = os.environ['API_ID']
@@ -26,7 +27,7 @@ async def generate_response(conversation_history):
             prompt.append({"role": "user", "content": message.text})
 
     # temporary log to admin
-    await client.send_message(88834504, prompt)
+    await client.send_message(88834504, json.dumps(prompt))
 
     response = openai.ChatCompletion.create(
         model="gpt-4",
