@@ -27,7 +27,7 @@ async def generate_response(conversation_history):
 
 
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4",
         messages=prompt
     )
 
