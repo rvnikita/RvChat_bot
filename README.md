@@ -26,6 +26,7 @@ export API_HASH=your_api_hash
 export PHONE_NUMBER=your_phone_number
 export OPENAI_API_KEY=your_openai_api_key
 export TELEGRAM_SESSION_STRING=your_telegram_session_string
+exporr LOGGING_CHAT_ID=your_logging_chat_id
 ```
 ### Run the dispatcher.py script:
 ```
