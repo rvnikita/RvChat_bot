@@ -10,7 +10,7 @@ The following environment variables are required for the script to work:
 API_ID: Your Telegram API ID
 API_HASH: Your Telegram API Hash
 PHONE_NUMBER: Your Telegram account phone number (e.g., +1234567890)
-OPENAI_API_KEY: Your OpenAI API Key
+OPENAI_API_KEY: Your OpenAI API Key (make sure you have access to the GPT-4 model or swith to the GPT-3.5 model)
 TELEGRAM_SESSION_STRING: The session string generated using the generate_session_string() function
 
 ## How to use
