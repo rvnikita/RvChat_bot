@@ -46,8 +46,9 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
     min_id = None
 
     async for msg in client.iter_messages(channel):
-        if msg.text == '/clear':
+        if msg.text == '/clear' or msg.text == 'Clearing conversation history':
             break
+
         if total_tokens + len(msg.text) <= max_tokens:
             messages.append(msg)
             total_tokens += len(msg.text)
