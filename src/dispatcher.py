@@ -34,18 +34,6 @@ async def generate_response(conversation_history):
     reply_text = response.choices[0].message.content.strip()
     return reply_text
 
-    # prompt = f"{' '.join(conversation_history)}\n\nBot:"
-    # response = openai.Completion.create(
-    #     engine="gpt-4",
-    #     prompt=prompt,
-    #     max_tokens=50,
-    #     n=1,
-    #     stop=None,
-    #     temperature=0.5
-    # )
-    # reply_text = response.choices[0].text.strip()
-    # return reply_text
-
 async def get_last_x_messages(client, channel_id, limit):
     # Get the channel entity
     channel = await client.get_entity(channel_id)
@@ -74,15 +62,6 @@ async def main():
 
     client.add_event_handler(on_new_message, events.NewMessage)
 
-    # channel_id = 88834504
-    # messages = await get_last_x_messages(client, channel_id, 100)
-    # conversation_history = [message.text for message in messages]
-
-    # response = await generate_response(conversation_history)
-
-    # await client.send_message(channel_id, response)
-
-    # Disconnect the client
     await client.run_until_disconnected()
 
 if __name__ == '__main__':
