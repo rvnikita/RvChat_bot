@@ -9,4 +9,4 @@
 **/.pytest_cache
 
 # Ignore session files
-**/.session*
+*.session
