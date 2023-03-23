@@ -81,7 +81,7 @@ async def on_new_message(event):
             #select preprompt form db for this user
             user = db_helper.session.query(db_helper.User).filter_by(id=event.sender_id).first()
             if user is None:
-                user = db_helper.User(id=event.sender_id, username=event.sender.username, first_name=event.sender.first_name, last_name=event.sender.last_name, status='active', preprompt='')
+                user = db_helper.User(id=event.sender_id, username=event.sender.username, status='active', preprompt='')
                 db_helper.session.add(user)
                 db_helper.session.commit()
 
