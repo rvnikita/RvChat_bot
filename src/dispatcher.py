@@ -6,7 +6,7 @@ from telethon.sessions import StringSession
 import openai
 import json
 
-
+#TODO:HIGH: move env variables to .env file
 # Get API credentials from environment variables
 API_ID = os.environ['API_ID']
 API_HASH = os.environ['API_HASH']
