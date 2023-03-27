@@ -10,3 +10,6 @@
 
 # Ignore session files
 *.session
+
+# Ignore .env file
+/config/.env
