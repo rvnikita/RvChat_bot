@@ -98,7 +98,7 @@ async def on_new_message(event):
 
         await client.send_message(event.chat_id, response)
     except Exception as e:
-        await client.send_message(LOGGING_CHAT_ID, f"Error: {e}")
+        await client.send_message(LOGGING_CHAT_ID, f"Error in file {__file__}: {e}")
 
 async def main():
     # Initialize the Telegram client
