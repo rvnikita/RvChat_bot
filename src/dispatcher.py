@@ -66,11 +66,11 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
 
     return messages[::-1]
 
-async def handle_preprompt_command(event, user):
-    if not event.text.startswith('/preprompt'):
+async def handle_setpreprompt_command(event, user):
+    if not event.text.startswith('/setpreprompt'):
         return
 
-    preprompt_text = event.text[len('/preprompt'):].strip()
+    preprompt_text = event.text[len('/setpreprompt'):].strip()
 
     if preprompt_text:
         user.preprompt = preprompt_text
@@ -81,21 +81,33 @@ async def handle_preprompt_command(event, user):
 
     db_helper.session.commit()
 
+async def handle_preprompt_command(event, user):
+    if not event.text.startswith('/preprompt'):
+        return
+
+    if user.preprompt:
+        await client.send_message(event.chat_id, f"Current preprompt: '{user.preprompt}'")
+    else:
+        await client.send_message(event.chat_id, "Preprompt is not set")
+
 async def on_new_message(event):
     try:
         if event.is_private != True:
             return
-        elif event.text == '/clear':
+        if event.text == '/clear':
             await client.send_message(event.chat_id, "Clearing conversation history")
             return
 
-        user = db_helper.session.query(db_helper.User).filter_by(id=event.sender_id).first()
+        user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
         if user is None:
             user = db_helper.User(id=event.chat_id, status='active', preprompt='')
             db_helper.session.add(user)
             db_helper.session.commit()
 
-        if event.text.startswith('/preprompt'):
+        if event.text.startswith('/setpreprompt'):
+            await handle_setpreprompt_command(event, user)
+            return
+        elif event.text.startswith('/preprompt'):
             await handle_preprompt_command(event, user)
             return
 
