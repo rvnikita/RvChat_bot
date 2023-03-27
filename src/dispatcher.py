@@ -88,7 +88,7 @@ async def handle_preprompt_command(event, user):
     if user.preprompt:
         await client.send_message(event.chat_id, f"Current preprompt: '{user.preprompt}'")
     else:
-        await client.send_message(event.chat_id, "Preprompt is not set")
+        await client.send_message(event.chat_id, "Preprompt is not set. If you'd like to set a preprompt, you can do so by typing /setpreprompt followed by the text you'd like to use as the preprompt.")
 
 async def on_new_message(event):
     try:
