@@ -68,7 +68,7 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
 
 async def on_new_message(event):
     try:
-        if event.chat_id != 88834504:
+        if event.chat_id != 88834504 and event.chat_id != 200204708:
             # For now debug only on my account
             return
         elif event.text == '/clear':
