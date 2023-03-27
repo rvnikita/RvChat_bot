@@ -66,36 +66,44 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
 
     return messages[::-1]
 
+async def handle_preprompt_command(event, user):
+    if not event.text.startswith('/preprompt'):
+        return
+
+    preprompt_text = event.text[len('/preprompt'):].strip()
+
+    if preprompt_text:
+        user.preprompt = preprompt_text
+        await client.send_message(event.chat_id, f"Preprompt has been set to: '{preprompt_text}'")
+    else:
+        user.preprompt = ''
+        await client.send_message(event.chat_id, "Preprompt has been cleared")
+
+    db_helper.session.commit()
+
 async def on_new_message(event):
     try:
-        #TODO:HIGH: when we will support this for all users - we need to think how get access to user instance if we don't have it direct;u
-        # await client.get_dialogs()
-
         if event.chat_id != 88834504 \
-                and event.chat_id != 200204708\
+                and event.chat_id != 200204708 \
                 and event.chat_id != 205629108:
-            # For now debug only on my account
             return
         elif event.text == '/clear':
             await client.send_message(event.chat_id, "Clearing conversation history")
             return
 
+        user = db_helper.session.query(db_helper.User).filter_by(id=event.sender_id).first()
+        if user is None:
+            user = db_helper.User(id=event.chat_id, status='active', preprompt='')
+            db_helper.session.add(user)
+            db_helper.session.commit()
+
+        if event.text.startswith('/preprompt'):
+            await handle_preprompt_command(event, user)
+            return
+
         async with client.action(event.chat_id, 'typing'):
             conversation_history = await get_last_x_messages(client, event.chat_id, 500)
-
-            #select preprompt form db for this user
-            user = db_helper.session.query(db_helper.User).filter_by(id=event.sender_id).first()
-            if user is None:
-                user = db_helper.User(id=event.chat_id, status='active', preprompt='')
-                db_helper.session.add(user)
-                db_helper.session.commit()
-
-                preprompt = None
-            else:
-                preprompt = user.preprompt
-
-
-            response = await generate_response(conversation_history, preprompt)
+            response = await generate_response(conversation_history, user.preprompt)
 
         await client.send_message(event.chat_id, response)
     except Exception as e:
