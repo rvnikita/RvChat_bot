@@ -68,7 +68,8 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
 
 async def on_new_message(event):
     try:
-        await client.get_dialogs()
+        #TODO:HIGH: when we will support this for all users - we need to think how get access to user instance if we don't have it direct;u
+        # await client.get_dialogs()
 
         if event.chat_id != 88834504 \
                 and event.chat_id != 200204708\
