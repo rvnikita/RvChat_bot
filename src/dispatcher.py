@@ -24,7 +24,7 @@ async def safe_send_message(chat_id, message):
         #split message into chunks of 4096 chars
         message_chunks = [message[i:i + 4096] for i in range(0, len(message), 4096)]
         for message_chunk in message_chunks:
-            await safe_send_message(chat_id, message_chunk)
+            await client.send_message(chat_id, message_chunk)
     except Exception as e:
         print(e)
 
