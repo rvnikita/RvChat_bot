@@ -13,3 +13,7 @@
 
 # Ignore .env file
 /config/.env
+
+# Ignore alembic
+/alembic/
+alembic.ini

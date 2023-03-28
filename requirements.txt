@@ -2,3 +2,4 @@ telethon
 openai
 sqlalchemy
 psycopg2
+alembic
