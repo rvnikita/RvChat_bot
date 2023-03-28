@@ -122,6 +122,12 @@ async def on_new_message(event):
             user.requests_counter += 1
             db_helper.session.commit()
 
+        # Add this to get event.chat_id entity if this is first time we see it
+        try:
+            await client.get_entity(event.chat_id)
+        except:
+            await client.get_dialogs()
+
         if event.text == '/clear':
             await client.send_message(event.chat_id, "Clearing conversation history")
             return
