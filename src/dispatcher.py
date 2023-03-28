@@ -151,7 +151,7 @@ async def on_new_message(event):
             return
 
         async with client.action(event.chat_id, 'typing'):
-            conversation_history = await get_last_x_messages(client, event.chat_id, 1500)
+            conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
             response = await generate_response(conversation_history, user.preprompt)
 
         await client.send_message(event.chat_id, response)
