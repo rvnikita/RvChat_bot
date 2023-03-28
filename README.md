@@ -1,6 +1,9 @@
 # GPT-4 Telegram Chatbot
 This script allows you to create a Telegram chatbot that responds to user messages using the GPT-4 language model. The chatbot works by fetching the last X messages in a conversation and generating a response based on the conversation history.
 
+Demo: http://t.me/rvnikita_public
+Author blog: http://t.me/rvnikita_blog
+
 ## How to generate a session string
 To avoid confirming your account with a code every time the script is launched, you can generate a session string and store it as an environment variable. To generate the session string, run the generate_session_string() function in the script.
 
