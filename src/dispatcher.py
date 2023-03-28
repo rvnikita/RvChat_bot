@@ -112,13 +112,14 @@ async def on_new_message(event):
 
         # Add this to get event.chat_id entity if this is first time we see it
         try:
-            await client.get_entity(event.chat_id)
+            user_info = await client.get_entity(event.chat_id)
         except:
             await client.get_dialogs()
+            user_info = await client.get_entity(event.chat_id)
 
         user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
         if user is None:
-            user = db_helper.User(id=event.chat_id, status='active', preprompt='', username=event.sender.username, first_name=event.sender.first_name, last_name=event.sender.last_name)
+            user = db_helper.User(id=event.chat_id, status='active', preprompt='', username=user_info.username, first_name=user_info.first_name, last_name=user_info.last_name)
             db_helper.session.add(user)
             db_helper.session.commit()
 
@@ -127,11 +128,11 @@ async def on_new_message(event):
         else:
             user.requests_counter += 1
             if user.username is None:
-                user.username = event.sender.username
+                user.username = user_info.username
             if user.first_name is None:
-                user.first_name = event.sender.first_name
+                user.first_name = user_info.first_name
             if user.last_name is None:
-                user.last_name = event.sender.last_name
+                user.last_name = user_info.last_name
             db_helper.session.commit()
 
         if event.text == '/clear':
