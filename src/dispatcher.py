@@ -28,13 +28,13 @@ async def safe_send_message(chat_id, message):
     except Exception as e:
         print(e)
 
-async def generate_response(conversation_history, preprompt = None):
+async def generate_response(conversation_history, memory = None):
     me = await client.get_me()
 
     prompt = []
 
-    if preprompt:
-        prompt.append({"role": "system", "content": preprompt})
+    if memory:
+        prompt.append({"role": "system", "content": memory})
 
     #loop through the conversation history
     for message in conversation_history:
@@ -75,37 +75,37 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
 
     return messages[::-1]
 
-async def handle_setpreprompt_command(event, user):
-    if not event.text.startswith('/setpreprompt'):
+async def handle_remember_command(event, user):
+    if not event.text.startswith('/remember'):
         return
 
-    preprompt_text = event.text[len('/setpreprompt'):].strip()
+    memory_text = event.text[len('/remember'):].strip()
 
-    if preprompt_text:
-        user.preprompt = preprompt_text
-        await safe_send_message(event.chat_id, f"Preprompt has been set to: '{preprompt_text}'")
+    if memory_text:
+        user.memory = memory_text
+        await safe_send_message(event.chat_id, f"Preprompt has been set to: '{memory_text}'")
     else:
-        user.preprompt = ''
+        user.memory = ''
         await safe_send_message(event.chat_id, "Preprompt has been cleared")
 
     db_helper.session.commit()
 
-async def handle_preprompt_command(event, user):
-    if not event.text.startswith('/preprompt'):
+async def handle_memory_command(event, user):
+    if not event.text.startswith('/memory'):
         return
 
-    if user.preprompt:
-        await safe_send_message(event.chat_id, f"Current preprompt: '{user.preprompt}'")
+    if user.memory:
+        await safe_send_message(event.chat_id, f"Current memory: '{user.memory}'")
     else:
-        await safe_send_message(event.chat_id, "Preprompt is not set. If you'd like to set a preprompt, you can do so by typing /setpreprompt followed by the text you'd like to use as the preprompt.")
+        await safe_send_message(event.chat_id, "Preprompt is not set. If you'd like to set a memory, you can do so by typing /remember followed by the text you'd like to use as the memory.")
 
 async def handle_start_command(event):
     welcome_text = """
 Hi! I'm a bot that uses OpenAI's GPT-4 to talk to you.
 
 Commands: 
-/setpreprompt [TEXT] - set a preprompt that will be used in the conversation.
-/preprompt           - show the current preprompt.
+/remember [TEXT] - set a memory that will be used in the conversation.
+/memory           - show the current memory.
 /clear               - clear the conversation history (don't use previous messages to generate a response).
 /help                - show this message.
 /start               - show this message.
@@ -128,7 +128,7 @@ async def on_new_message(event):
 
         user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
         if user is None:
-            user = db_helper.User(id=event.chat_id, status='active', preprompt='', username=user_info.username, first_name=user_info.first_name, last_name=user_info.last_name)
+            user = db_helper.User(id=event.chat_id, status='active', memory='', username=user_info.username, first_name=user_info.first_name, last_name=user_info.last_name)
             db_helper.session.add(user)
             db_helper.session.commit()
 
@@ -152,16 +152,16 @@ async def on_new_message(event):
             await handle_start_command(event)
             return
 
-        if event.text.startswith('/setpreprompt'):
-            await handle_setpreprompt_command(event, user)
+        if event.text.startswith('/remember'):
+            await handle_remember_command(event, user)
             return
-        elif event.text.startswith('/preprompt'):
-            await handle_preprompt_command(event, user)
+        if event.text.startswith('/memory'):
+            await handle_memory_command(event, user)
             return
 
         async with client.action(event.chat_id, 'typing'):
             conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
-            response = await generate_response(conversation_history, user.preprompt)
+            response = await generate_response(conversation_history, user.memory)
 
         await safe_send_message(event.chat_id, response)
     except Exception as e:
