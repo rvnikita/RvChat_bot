@@ -19,6 +19,15 @@ LOGGING_CHAT_ID = int(os.environ['LOGGING_CHAT_ID'])
 openai.api_key = OPENAI_API_KEY
 client = TelegramClient(StringSession(TELEGRAM_SESSION_STRING), API_ID, API_HASH)
 
+async def safe_send_message(chat_id, message):
+    try:
+        #split message into chunks of 4096 chars
+        message_chunks = [message[i:i + 4096] for i in range(0, len(message), 4096)]
+        for message_chunk in message_chunks:
+            await safe_send_message(chat_id, message_chunk)
+    except Exception as e:
+        print(e)
+
 async def generate_response(conversation_history, preprompt = None):
     me = await client.get_me()
 
@@ -35,7 +44,7 @@ async def generate_response(conversation_history, preprompt = None):
             prompt.append({"role": "user", "content": message.text})
 
     # temporary log to admin
-    await client.send_message(LOGGING_CHAT_ID, json.dumps(prompt, indent=4))
+    await safe_send_message(LOGGING_CHAT_ID, json.dumps(prompt, indent=4))
 
     response = openai.ChatCompletion.create(
         model="gpt-4",
@@ -74,10 +83,10 @@ async def handle_setpreprompt_command(event, user):
 
     if preprompt_text:
         user.preprompt = preprompt_text
-        await client.send_message(event.chat_id, f"Preprompt has been set to: '{preprompt_text}'")
+        await safe_send_message(event.chat_id, f"Preprompt has been set to: '{preprompt_text}'")
     else:
         user.preprompt = ''
-        await client.send_message(event.chat_id, "Preprompt has been cleared")
+        await safe_send_message(event.chat_id, "Preprompt has been cleared")
 
     db_helper.session.commit()
 
@@ -86,9 +95,9 @@ async def handle_preprompt_command(event, user):
         return
 
     if user.preprompt:
-        await client.send_message(event.chat_id, f"Current preprompt: '{user.preprompt}'")
+        await safe_send_message(event.chat_id, f"Current preprompt: '{user.preprompt}'")
     else:
-        await client.send_message(event.chat_id, "Preprompt is not set. If you'd like to set a preprompt, you can do so by typing /setpreprompt followed by the text you'd like to use as the preprompt.")
+        await safe_send_message(event.chat_id, "Preprompt is not set. If you'd like to set a preprompt, you can do so by typing /setpreprompt followed by the text you'd like to use as the preprompt.")
 
 async def handle_start_command(event):
     welcome_text = """
@@ -102,7 +111,7 @@ async def handle_start_command(event):
         /start         - show this message.
         """
 
-    await client.send_message(event.chat_id, welcome_text)
+    await safe_send_message(event.chat_id, welcome_text)
 
 
 async def on_new_message(event):
@@ -136,7 +145,7 @@ async def on_new_message(event):
             db_helper.session.commit()
 
         if event.text == '/clear':
-            await client.send_message(event.chat_id, "Clearing conversation history")
+            await safe_send_message(event.chat_id, "Clearing conversation history")
             return
 
         if event.text == '/start' or event.text == '/help':
@@ -154,9 +163,9 @@ async def on_new_message(event):
             conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
             response = await generate_response(conversation_history, user.preprompt)
 
-        await client.send_message(event.chat_id, response)
+        await safe_send_message(event.chat_id, response)
     except Exception as e:
-        await client.send_message(LOGGING_CHAT_ID, f"Error in file {__file__}: {e}")
+        await safe_send_message(LOGGING_CHAT_ID, f"Error in file {__file__}: {e}")
 
 async def main():
     # Initialize the Telegram client
