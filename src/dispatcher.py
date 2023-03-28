@@ -159,6 +159,11 @@ async def on_new_message(event):
             await handle_memory_command(event, user)
             return
 
+        if event.text.startswith('/'):
+            await safe_send_message(event.chat_id, "Unknown command")
+            await handle_start_command(event)
+            return
+
         async with client.action(event.chat_id, 'typing'):
             conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
             response = await generate_response(conversation_history, user.memory)
