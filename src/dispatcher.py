@@ -83,10 +83,10 @@ async def handle_remember_command(event, user):
 
     if memory_text:
         user.memory = memory_text
-        await safe_send_message(event.chat_id, f"Preprompt has been set to: '{memory_text}'")
+        await safe_send_message(event.chat_id, f"Memory has been set to: '{memory_text}'")
     else:
         user.memory = ''
-        await safe_send_message(event.chat_id, "Preprompt has been cleared")
+        await safe_send_message(event.chat_id, "Memory has been cleared")
 
     db_helper.session.commit()
 
@@ -97,7 +97,7 @@ async def handle_memory_command(event, user):
     if user.memory:
         await safe_send_message(event.chat_id, f"Current memory: '{user.memory}'")
     else:
-        await safe_send_message(event.chat_id, "Preprompt is not set. If you'd like to set a memory, you can do so by typing /remember followed by the text you'd like to use as the memory.")
+        await safe_send_message(event.chat_id, "Memory is not set. If you'd like to set a memory, you can do so by typing /remember followed by the text you'd like to use as the memory.")
 
 async def handle_start_command(event):
     welcome_text = """

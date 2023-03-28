@@ -22,7 +22,7 @@ class User(Base):
     last_name = Column(String)
     status = Column(String)
     last_message_datetime = Column(DateTime)
-    preprompt = Column(String)
+    memory = Column(String)
     requests_counter = Column(Integer, default=0)
 
 
