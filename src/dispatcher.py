@@ -63,7 +63,7 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
     min_id = None
 
     async for msg in client.iter_messages(channel):
-        if msg.text == '/clear' or msg.text == 'Clearing conversation history':
+        if msg.text == '/clear' or msg.text == 'Conversation history cleared':
             break
 
         if total_tokens + len(msg.text) <= max_tokens:
@@ -145,7 +145,7 @@ async def on_new_message(event):
             db_helper.session.commit()
 
         if event.text == '/clear':
-            await safe_send_message(event.chat_id, "Clearing conversation history")
+            await safe_send_message(event.chat_id, "Conversation history cleared")
             return
 
         if event.text == '/start' or event.text == '/help':
