@@ -104,11 +104,11 @@ async def handle_start_command(event):
         Hi! I'm a bot that uses OpenAI's GPT-4 to talk to you.
 
         Commands: 
-        /setpreprompt  - set a preprompt that will be used in the conversation.
-        /preprompt     - show the current preprompt.
-        /clear         - clear the conversation history (don't use previous messages to generate a response).
-        /help          - show this message.
-        /start         - show this message.
+        /setpreprompt [TEXT] - set a preprompt that will be used in the conversation.
+        /preprompt           - show the current preprompt.
+        /clear               - clear the conversation history (don't use previous messages to generate a response).
+        /help                - show this message.
+        /start               - show this message.
         """
 
     await safe_send_message(event.chat_id, welcome_text)
