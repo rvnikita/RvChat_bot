@@ -110,6 +110,12 @@ async def on_new_message(event):
         if event.is_private != True:
             return
 
+        # Add this to get event.chat_id entity if this is first time we see it
+        try:
+            await client.get_entity(event.chat_id)
+        except:
+            await client.get_dialogs()
+
         user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
         if user is None:
             user = db_helper.User(id=event.chat_id, status='active', preprompt='')
@@ -121,12 +127,6 @@ async def on_new_message(event):
         else:
             user.requests_counter += 1
             db_helper.session.commit()
-
-        # Add this to get event.chat_id entity if this is first time we see it
-        try:
-            await client.get_entity(event.chat_id)
-        except:
-            await client.get_dialogs()
 
         if event.text == '/clear':
             await client.send_message(event.chat_id, "Clearing conversation history")
