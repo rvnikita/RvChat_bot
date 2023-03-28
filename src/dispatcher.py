@@ -90,12 +90,24 @@ async def handle_preprompt_command(event, user):
     else:
         await client.send_message(event.chat_id, "Preprompt is not set. If you'd like to set a preprompt, you can do so by typing /setpreprompt followed by the text you'd like to use as the preprompt.")
 
+async def handle_start_command(event):
+    welcome_text = """
+        Hi! I'm a bot that uses OpenAI's GPT-4 to talk to you.
+
+        Commands: 
+        /setpreprompt  - set a preprompt that will be used in the conversation.
+        /preprompt     - show the current preprompt.
+        /clear         - clear the conversation history (don't use previous messages to generate a response).
+        /help          - show this message.
+        /start         - show this message.
+        """
+
+    await client.send_message(event.chat_id, welcome_text)
+
+
 async def on_new_message(event):
     try:
         if event.is_private != True:
-            return
-        if event.text == '/clear':
-            await client.send_message(event.chat_id, "Clearing conversation history")
             return
 
         user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
@@ -103,6 +115,20 @@ async def on_new_message(event):
             user = db_helper.User(id=event.chat_id, status='active', preprompt='')
             db_helper.session.add(user)
             db_helper.session.commit()
+
+            await handle_start_command(event)
+            return
+        else:
+            user.requests_counter += 1
+            db_helper.session.commit()
+
+        if event.text == '/clear':
+            await client.send_message(event.chat_id, "Clearing conversation history")
+            return
+
+        if event.text == '/start' or event.text == '/help':
+            await handle_start_command(event)
+            return
 
         if event.text.startswith('/setpreprompt'):
             await handle_setpreprompt_command(event, user)
