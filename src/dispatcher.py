@@ -109,6 +109,8 @@ Commands:
 /clear               - clear the conversation history (don't use previous messages to generate a response).
 /help                - show this message.
 /start               - show this message.
+
+@rvnikita_blog - Nikita Rvachev's blog (author of this bot)
         """
 
     await safe_send_message(event.chat_id, welcome_text)
