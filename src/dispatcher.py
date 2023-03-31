@@ -5,6 +5,7 @@ from telethon import TelegramClient, events, types
 from telethon.sessions import StringSession
 import openai
 import json
+import datetime
 
 #TODO:HIGH: move env variables to .env file
 # Get API credentials from environment variables
@@ -130,7 +131,7 @@ async def on_new_message(event):
 
         user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
         if user is None:
-            user = db_helper.User(id=event.chat_id, status='active', memory='', username=user_info.username, first_name=user_info.first_name, last_name=user_info.last_name)
+            user = db_helper.User(id=event.chat_id, status='active', memory='', username=user_info.username, first_name=user_info.first_name, last_name=user_info.last_name, last_message_datetime=datetime.datetime.now())
             db_helper.session.add(user)
             db_helper.session.commit()
 
@@ -144,6 +145,7 @@ async def on_new_message(event):
                 user.first_name = user_info.first_name
             if user.last_name is None:
                 user.last_name = user_info.last_name
+            user.last_message_datetime = datetime.datetime.now()
             db_helper.session.commit()
 
         if event.text == '/clear':
