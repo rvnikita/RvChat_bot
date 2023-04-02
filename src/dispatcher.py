@@ -147,9 +147,9 @@ async def handle_summary_command(event):
         await safe_send_message(event.chat_id, "You need to provide an url or text after /summary get summary. E.g. /summary https://openai.com/product/gpt-4")
         return
 
-    safe_send_message(event.chat_id, "Generating summary...\n(can take 2-3 minutes for big pages)")
+    await safe_send_message(event.chat_id, "Generating summary...\n(can take 2-3 minutes for big pages)")
 
-    async with client.action(event.chat_id, 'typing'):
+    async with client.action(event.chat_id, 'typing', delay=5):
 
         url_content_title, url_content_body = openai_helper.helper_get_url_content(url_or_text)
 
@@ -229,7 +229,7 @@ async def on_new_message(event):
             await handle_start_command(event)
             return
 
-        async with client.action(event.chat_id, 'typing'):
+        async with client.action(event.chat_id, 'typing', delay=5):
             conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
             response = await generate_response(conversation_history, user.memory)
 
