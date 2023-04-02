@@ -3,3 +3,4 @@ openai
 sqlalchemy
 psycopg2
 alembic
+bs4

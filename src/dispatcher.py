@@ -1,4 +1,6 @@
 import src.db_helper as db_helper
+import src.openai_helper as openai_helper
+
 
 import os
 from telethon import TelegramClient, events, types
@@ -6,16 +8,22 @@ from telethon.sessions import StringSession
 import openai
 import json
 import datetime
+import re
+import configparser
+
+config = configparser.SafeConfigParser(os.environ)
+config_path = os.path.dirname(__file__) + '/../config/' #we need this trick to get path to config folder
+config.read(config_path + 'settings.ini')
 
 #TODO:HIGH: move env variables to .env file
 # Get API credentials from environment variables
-API_ID = os.environ['API_ID']
-API_HASH = os.environ['API_HASH']
-PHONE_NUMBER = os.environ['PHONE_NUMBER']
-OPENAI_API_KEY = os.environ['OPENAI_API_KEY']
-TELEGRAM_SESSION_STRING = os.environ['TELEGRAM_SESSION_STRING']
+API_ID = config['TELEGRAM']['API_ID']
+API_HASH = config['TELEGRAM']['API_HASH']
+PHONE_NUMBER = config['TELEGRAM']['PHONE_NUMBER']
+OPENAI_API_KEY = config['OPENAI']['KEY']
+TELEGRAM_SESSION_STRING = config['TELEGRAM']['SESSION_STRING']
 #TODO:MED: rewrite this with logging module
-LOGGING_CHAT_ID = int(os.environ['LOGGING_CHAT_ID'])
+LOGGING_CHAT_ID = int(config['TELEGRAM']['LOGGING_CHAT_ID'])
 
 openai.api_key = OPENAI_API_KEY
 client = TelegramClient(StringSession(TELEGRAM_SESSION_STRING), API_ID, API_HASH)
@@ -78,9 +86,11 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
 
     return messages[::-1]
 
-async def handle_remember_command(event, user):
+async def handle_remember_command(event):
     if not event.text.startswith('/remember'):
         return
+
+    user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
     memory_text = event.text[len('/remember'):].strip()
 
@@ -93,9 +103,11 @@ async def handle_remember_command(event, user):
 
     db_helper.session.commit()
 
-async def handle_memory_command(event, user):
+async def handle_memory_command(event):
     if not event.text.startswith('/memory'):
         return
+
+    user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
     if user.memory:
         await safe_send_message(event.chat_id, f"Current memory: '{user.memory}'")
@@ -118,10 +130,51 @@ Commands:
 
     await safe_send_message(event.chat_id, welcome_text)
 
+async def handle_summary_command(event):
+    if event.text.startswith('/summary'):
+        url_or_text = event.text[len('/summary'):].strip()
+    elif event.text.startswith('/s '):
+        url_or_text = event.text[len('/s '):].strip()
+    else:
+        return
+
+    # check if it's a url_or_text is empty (only spaces,tabs or nothing)
+    if re.match(r"^[\s\t]*$", url_or_text):
+        await safe_send_message(event.chat_id, "You need to provide an url or text after /summary get summary. E.g. /summary https://openai.com/product/gpt-4")
+        return
+
+    if url_or_text is None:
+        await safe_send_message(event.chat_id, "You need to provide an url or text after /summary get summary. E.g. /summary https://openai.com/product/gpt-4")
+        return
+
+    safe_send_message(event.chat_id, "Generating summary...\n(can take 2-3 minutes for big pages)")
+
+    async with client.action(event.chat_id, 'typing'):
+
+        url_content_title, url_content_body = openai_helper.helper_get_url_content(url_or_text)
+
+        # check if it's a url or a text
+        if url_content_body is not None:  # so that was a valid url
+            summary = openai_helper.helper_get_summary_from_text(url_content_body, url_content_title)
+        else:  # so that was a text
+            # FIXME: we can get url_content_body = None even for valid url. So this else is not 100% correct
+            summary = openai_helper.helper_get_summary_from_text(url_or_text)
+
+        await safe_send_message(event.chat_id, summary)
+
+
+
+
+
+
+
+
 
 async def on_new_message(event):
     try:
         if event.is_private != True:
+            return
+        if event.sender_id == (await client.get_me()).id:
             return
 
         # Add this to get event.chat_id entity if this is first time we see it
@@ -132,6 +185,7 @@ async def on_new_message(event):
             user_info = await client.get_entity(event.chat_id)
 
         user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
+
         if user is None:
             user = db_helper.User(id=event.chat_id, status='active', memory='', username=user_info.username, first_name=user_info.first_name, last_name=user_info.last_name, last_message_datetime=datetime.datetime.now())
             db_helper.session.add(user)
@@ -159,10 +213,15 @@ async def on_new_message(event):
             return
 
         if event.text.startswith('/remember'):
-            await handle_remember_command(event, user)
+            await handle_remember_command(event)
             return
+
         if event.text.startswith('/memory'):
             await handle_memory_command(event, user)
+            return
+
+        if event.text.startswith('/summary') or event.text.startswith('/s '):
+            await handle_summary_command(event)
             return
 
         if event.text.startswith('/'):
