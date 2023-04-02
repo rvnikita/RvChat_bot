@@ -55,7 +55,7 @@ async def generate_response(conversation_history, memory = None):
             prompt.append({"role": "user", "content": message.text})
 
     # temporary log to admin
-    await safe_send_message(LOGGING_CHAT_ID, json.dumps(prompt, indent=4))
+    # await safe_send_message(LOGGING_CHAT_ID, json.dumps(prompt, indent=4))
 
     response = openai.ChatCompletion.create(
         model="gpt-4",
@@ -162,14 +162,6 @@ async def handle_summary_command(event):
 
         await safe_send_message(event.chat_id, summary)
 
-
-
-
-
-
-
-
-
 async def on_new_message(event):
     try:
         if event.is_private != True:
@@ -229,7 +221,7 @@ async def on_new_message(event):
             await handle_start_command(event)
             return
 
-        async with client.action(event.chat_id, 'typing', delay=5):
+        async with client.action(event.chat_id, 'typing'):
             conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
             response = await generate_response(conversation_history, user.memory)
 
