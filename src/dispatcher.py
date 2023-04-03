@@ -158,7 +158,7 @@ async def handle_summary_command(event):
 
         await safe_send_message(event.chat_id, summary)
 
-async def handle_test_announcement_command(event):
+async def handle_test_announcement_command(event, session):
     if not event.text.startswith('/test_announcement'):
         return
 
@@ -167,11 +167,11 @@ async def handle_test_announcement_command(event):
 
     announcement_text = event.text[len('/test_announcement'):].strip()
     if announcement_text:
-        await announce_helper.add_message_to_queue(announcement_text, is_test=True)
+        await announce_helper.add_message_to_queue(announcement_text, is_test=True, session=session)
     else:
         await safe_send_message(event.chat_id, "Please provide a text after /test_announcement. E.g. /test_announcement Hello, this is a test announcement!")
 
-async def handle_announcement_command(event):
+async def handle_announcement_command(event, session):
     if not event.text.startswith('/announcement'):
         return
 
@@ -181,7 +181,7 @@ async def handle_announcement_command(event):
 
     announcement_text = event.text[len('/announcement'):].strip()
     if announcement_text:
-        await announce_helper.add_message_to_queue(announcement_text, is_test=False)
+        await announce_helper.add_message_to_queue(announcement_text, is_test=False, session=session)
     else:
         await safe_send_message(event.chat_id, "Please provide a text after /announcement. E.g. /announcement Hello, this is an announcement!")
 
@@ -222,11 +222,11 @@ async def on_new_message(event):
                 session.commit()
 
             if event.text.startswith('/test_announcement'):
-                await handle_test_announcement_command(event)
+                await handle_test_announcement_command(event, session=session)
                 return
 
             if event.text.startswith('/announcement'):
-                await handle_announcement_command(event)
+                await handle_announcement_command(event, session=session)
                 return
 
             if event.text == '/clear':
@@ -238,11 +238,11 @@ async def on_new_message(event):
                 return
 
             if event.text.startswith('/remember'):
-                await handle_remember_command(event, session)
+                await handle_remember_command(event, session=session)
                 return
 
             if event.text.startswith('/memory'):
-                await handle_memory_command(event, session)
+                await handle_memory_command(event, session=session)
                 return
 
             if event.text.startswith('/summary') or event.text.startswith('/s '):

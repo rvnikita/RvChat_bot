@@ -10,7 +10,7 @@ config = configparser.ConfigParser(os.environ)
 config_path = os.path.dirname(__file__) + '/../config/' #we need this trick to get path to config folder
 config.read(config_path + 'settings.ini')
 
-async def add_message_to_queue(message, is_test=False):
+async def add_message_to_queue(message, is_test=False, session=None):
     new_message = MessageQueue(message=message, is_test=is_test)
     session.add(new_message)
     session.commit()
