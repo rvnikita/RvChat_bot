@@ -1,10 +1,17 @@
 from sqlalchemy import Column, String, DateTime, Integer, create_engine, Boolean, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, declared_attr
 from sqlalchemy.orm import Session, relationship
+import os
+import configparser
 import datetime
 from contextlib import contextmanager
 import os
 import psycopg2
+
+config = configparser.ConfigParser(os.environ)
+config_path = os.path.dirname(__file__) + '/../config/' #we need this trick to get path to config folder
+config.read(config_path + 'settings.ini')
+
 
 class Base(DeclarativeBase):
     __prefix__ = 'rvchatbot_'
@@ -52,8 +59,8 @@ session = None
 
 @contextmanager
 def session_scope():
-    self.db_engine = create_engine(f"postgresql://{config['DB']['USER']}:{config['DB']['PASSWORD']}@{config['DB']['HOST']}:{config['DB']['PORT']}/{config['DB']['NAME']}")
-    session = Session(self.db_engine)
+    db_engine = create_engine(f"postgresql://{config['DB']['USER']}:{config['DB']['PASSWORD']}@{config['DB']['HOST']}:{config['DB']['PORT']}/{config['DB']['NAME']}")
+    session = Session(db_engine)
 
     try:
         yield session
