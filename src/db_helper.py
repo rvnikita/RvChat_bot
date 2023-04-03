@@ -34,7 +34,7 @@ class User(Base):
     requests_counter = Column(Integer, default=0)
 
 class MessageQueue(Base):
-    id = Column(BigInteger, primary_key=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     message = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
     is_test = Column(Boolean, default=False)
