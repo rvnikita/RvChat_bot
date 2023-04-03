@@ -114,13 +114,14 @@ async def handle_start_command(event):
 Hi! I'm a bot that uses OpenAI's GPT-4 to talk to you.
 
 Commands: 
-/remember [TEXT] - set a memory that will be used in the conversation.
-/memory           - show the current memory.
+/remember [TEXT]     - set a memory that will be used in the conversation.
+/memory              - show the current memory.
 /clear               - clear the conversation history (don't use previous messages to generate a response).
 /help                - show this message.
 /start               - show this message.
+/s or /summary       - get summary of the text or url. E.g. /summary https://openai.com/product/gpt-4
 
-@rvnikita_blog - Nikita Rvachev's blog (author of this bot)
+❗️@rvnikita_blog ❗ - Nikita Rvachev's blog (author of this bot)
         """
 
     await safe_send_message(event.chat_id, welcome_text)
