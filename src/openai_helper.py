@@ -72,6 +72,8 @@ def helper_get_summary_from_text(content_body, content_title = None, ):
         #TODO:LOW: it's a good idea to edit previous message adding a dot at each iteration for Generating summary...
         print(f"Generating summary... {i}")
 
+    #TODO:MED: summary_chunks togetter also could be bigger then maximum allowed tokes. We need to check this and maybe make another itteraction of summarization of summary by chanks.
+
     messages = [
         {"role": "system",
          "content": f"Give me a takeaway summary based on title and texts."},
