@@ -21,7 +21,7 @@ async def main():
 
         # Adjust the batch size and delay as needed
         messages_to_send = config['ANNOUNCE']['MESSAGES_TO_SEND']
-        delay_between_messages = config['ANNOUNCE']['DELAY_BETWEEN_MESSAGES']
+        delay_between_messages = int(config['ANNOUNCE']['DELAY_BETWEEN_MESSAGES'])
 
         await announce_helper.process_message_queue(client, messages_to_send, delay_between_messages, session)
 

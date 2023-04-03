@@ -25,7 +25,7 @@ async def add_message_to_queue(message, is_test=False, session=None):
     session.commit()
 
 
-async def process_message_queue(client, messages_to_send=10, delay_between_messages=5, session=None):
+async def process_message_queue(client, messages_to_send=10, delay_between_messages=10, session=None):
     unsent_user_messages = (
         session.query(UserMessage)
         .filter(UserMessage.sent_at.is_(None))
