@@ -62,5 +62,7 @@ def get_session():
     else:
         session.commit()
 
+    return session
+
 session = get_session()
 
