@@ -7,7 +7,7 @@ import os
 # Import process_message_queue from your main script
 import src.announce_helper as announce_helper
 
-config = configparser.ConfigParser(os.environ)
+config = configparser.SafeConfigParser(os.environ)
 config_path = os.path.dirname(__file__) + '/../config/'
 config.read(config_path + 'settings.ini')
 
