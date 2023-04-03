@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, DateTime, Integer, create_engine, Boolean
 from sqlalchemy.orm import DeclarativeBase, declared_attr
 from sqlalchemy.orm import Session, relationship
 import datetime
+from contextlib import contextmanager
 import os
 import psycopg2
 
