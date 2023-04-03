@@ -18,16 +18,10 @@ config.read(config_path + 'settings.ini')
 
 #TODO:HIGH: move env variables to .env file
 # Get API credentials from environment variables
-API_ID = config['TELEGRAM']['API_ID']
-API_HASH = config['TELEGRAM']['API_HASH']
-PHONE_NUMBER = config['TELEGRAM']['PHONE_NUMBER']
-OPENAI_API_KEY = config['OPENAI']['KEY']
-TELEGRAM_SESSION_STRING = config['TELEGRAM']['SESSION_STRING']
 #TODO:MED: rewrite this with logging module
-LOGGING_CHAT_ID = int(config['TELEGRAM']['LOGGING_CHAT_ID'])
 
-openai.api_key = OPENAI_API_KEY
-client = TelegramClient(StringSession(TELEGRAM_SESSION_STRING), API_ID, API_HASH)
+openai.api_key = config['OPENAI']['KEY']
+client = TelegramClient(StringSession(config['TELEGRAM']['SESSION_STRING']), config['TELEGRAM']['API_ID'], config['TELEGRAM']['API_HASH'])
 
 async def safe_send_message(chat_id, message):
     try:
@@ -264,7 +258,7 @@ async def on_new_message(event):
 
         await safe_send_message(event.chat_id, response)
     except Exception as e:
-        await safe_send_message(LOGGING_CHAT_ID, f"Error in file {__file__}: {e}")
+        await safe_send_message(int(config['TELEGRAM']['LOGGING_CHAT_ID']), f"Error in file {__file__}: {e}")
 
 async def main():
     # Initialize the Telegram client
