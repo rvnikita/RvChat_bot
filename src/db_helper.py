@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, Integer, create_engine, Boolean, ForeignKey
+from sqlalchemy import Column, String, DateTime, Integer, create_engine, Boolean, ForeignKey, BigInteger
 from sqlalchemy.orm import DeclarativeBase, declared_attr
 from sqlalchemy.orm import Session, relationship
 import os
@@ -23,28 +23,28 @@ class Base(DeclarativeBase):
 
 class User(Base):
 
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     username = Column(String)
     first_name = Column(String)
     last_name = Column(String)
     status = Column(String)
-    last_message_datetime = Column(DateTime)
+    last_message_datetime = Column(DateTime(timezone=True))
     memory = Column(String)
     requests_counter = Column(Integer, default=0)
 
 class MessageQueue(Base):
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     message = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
     is_test = Column(Boolean, default=False)
 
     user_messages = relationship("UserMessage", back_populates="message_queue")
 
 class UserMessage(Base):
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('rvchatbot_user.id'))
-    message_queue_id = Column(Integer, ForeignKey('rvchatbot_messagequeue.id'))
+    id = Column(BigInteger, primary_key=True)
+    user_id = Column(BigInteger, ForeignKey('rvchatbot_user.id'))
+    message_queue_id = Column(BigInteger, ForeignKey('rvchatbot_messagequeue.id'))
 
     sent_at = Column(DateTime, nullable=True)
 
