@@ -1,5 +1,6 @@
 import src.db_helper as db_helper
 import src.openai_helper as openai_helper
+import src.announce_helper as announce_helper
 
 
 import os
@@ -162,6 +163,34 @@ async def handle_summary_command(event):
 
         await safe_send_message(event.chat_id, summary)
 
+async def handle_test_announcement_command(event):
+    if not event.text.startswith('/test_announcement'):
+        return
+
+    if event.sender_id != int(config['TELEGRAM']['ADMIN_ID']):
+        return
+
+    announcement_text = event.text[len('/test_announcement'):].strip()
+    if announcement_text:
+        await announce_helper.add_message_to_queue(announcement_text, is_test=True)
+    else:
+        await safe_send_message(event.chat_id, "Please provide a text after /test_announcement. E.g. /test_announcement Hello, this is a test announcement!")
+
+async def handle_announcement_command(event):
+    if not event.text.startswith('/announcement'):
+        return
+
+    #could be used only by admins
+    if event.sender_id != int(config['TELEGRAM']['ADMIN_ID']):
+        return
+
+    announcement_text = event.text[len('/announcement'):].strip()
+    if announcement_text:
+        await announce_helper.add_message_to_queue(announcement_text, is_test=False)
+    else:
+        await safe_send_message(event.chat_id, "Please provide a text after /announcement. E.g. /announcement Hello, this is an announcement!")
+
+
 async def on_new_message(event):
     try:
         if event.is_private != True:
@@ -195,6 +224,14 @@ async def on_new_message(event):
                 user.last_name = user_info.last_name
             user.last_message_datetime = datetime.datetime.now()
             db_helper.session.commit()
+
+        if event.text.startswith('/test_announcement'):
+            await handle_test_announcement_command(event)
+            return
+
+        if event.text.startswith('/announcement'):
+            await handle_announcement_command(event)
+            return
 
         if event.text == '/clear':
             await safe_send_message(event.chat_id, "Conversation history cleared")

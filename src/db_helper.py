@@ -1,6 +1,6 @@
-from sqlalchemy import Column, String, DateTime, Integer, create_engine
+from sqlalchemy import Column, String, DateTime, Integer, create_engine, Boolean, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, declared_attr
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, relationship
 import datetime
 import os
 import psycopg2
@@ -24,6 +24,26 @@ class User(Base):
     last_message_datetime = Column(DateTime)
     memory = Column(String)
     requests_counter = Column(Integer, default=0)
+
+class MessageQueue(Base):
+    id = Column(Integer, primary_key=True)
+    message = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    is_test = Column(Boolean, default=False)
+
+    user_messages = relationship("UserMessage", back_populates="message_queue")
+
+class UserMessage(Base):
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('rvchatbot_user.id'))
+    message_queue_id = Column(Integer, ForeignKey('rvchatbot_messagequeue.id'))
+
+    sent_at = Column(DateTime, nullable=True)
+
+    user = relationship("User", back_populates="user_messages")
+    message_queue = relationship("MessageQueue", back_populates="user_messages")
+
+User.user_messages = relationship("UserMessage", order_by=UserMessage.id, back_populates="user")
 
 
 #connect to postgresql
