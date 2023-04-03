@@ -47,5 +47,18 @@ User.user_messages = relationship("UserMessage", order_by=UserMessage.id, back_p
 
 
 #connect to postgresql
-engine = create_engine(f"postgresql://{os.environ['ENV_DB_USER']}:{os.environ['ENV_DB_PASSWORD']}@{os.environ['ENV_DB_HOST']}:{os.environ['ENV_DB_PORT']}/{os.environ['ENV_DB_NAME']}")
-session = Session(engine)
+session = None
+
+@contextmanager
+def session_scope(self):
+    self.db_engine = create_engine(f"postgresql://{config['DB']['USER']}:{config['DB']['PASSWORD']}@{config['DB']['HOST']}:{config['DB']['PORT']}/{config['DB']['NAME']}")
+    session = Session(self.db_engine)
+
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()

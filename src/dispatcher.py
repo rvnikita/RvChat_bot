@@ -81,11 +81,11 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
 
     return messages[::-1]
 
-async def handle_remember_command(event):
+async def handle_remember_command(event, session):
     if not event.text.startswith('/remember'):
         return
 
-    user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
+    user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
     memory_text = event.text[len('/remember'):].strip()
 
@@ -96,13 +96,13 @@ async def handle_remember_command(event):
         user.memory = ''
         await safe_send_message(event.chat_id, "Memory has been cleared")
 
-    db_helper.session.commit()
+    session.commit()
 
-async def handle_memory_command(event):
+async def handle_memory_command(event, session):
     if not event.text.startswith('/memory'):
         return
 
-    user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
+    user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
     if user.memory:
         await safe_send_message(event.chat_id, f"Current memory: '{user.memory}'")
@@ -188,76 +188,77 @@ async def handle_announcement_command(event):
 
 async def on_new_message(event):
     try:
-        if event.is_private != True:
-            return
-        if event.sender_id == (await client.get_me()).id:
-            return
+        with db_helper.session_scope() as session:
+            if event.is_private != True:
+                return
+            if event.sender_id == (await client.get_me()).id:
+                return
 
-        # Add this to get event.chat_id entity if this is first time we see it
-        try:
-            user_info = await client.get_entity(event.chat_id)
-        except:
-            await client.get_dialogs()
-            user_info = await client.get_entity(event.chat_id)
+            # Add this to get event.chat_id entity if this is first time we see it
+            try:
+                user_info = await client.get_entity(event.chat_id)
+            except:
+                await client.get_dialogs()
+                user_info = await client.get_entity(event.chat_id)
 
-        user = db_helper.session.query(db_helper.User).filter_by(id=event.chat_id).first()
+            user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
-        if user is None:
-            user = db_helper.User(id=event.chat_id, status='active', memory='', username=user_info.username, first_name=user_info.first_name, last_name=user_info.last_name, last_message_datetime=datetime.datetime.now())
-            db_helper.session.add(user)
-            db_helper.session.commit()
+            if user is None:
+                user = db_helper.User(id=event.chat_id, status='active', memory='', username=user_info.username, first_name=user_info.first_name, last_name=user_info.last_name, last_message_datetime=datetime.datetime.now())
+                session.add(user)
+                session.commit()
 
-            await handle_start_command(event)
-            return
-        else:
-            user.requests_counter += 1
-            if user.username is None:
-                user.username = user_info.username
-            if user.first_name is None:
-                user.first_name = user_info.first_name
-            if user.last_name is None:
-                user.last_name = user_info.last_name
-            user.last_message_datetime = datetime.datetime.now()
-            db_helper.session.commit()
+                await handle_start_command(event)
+                return
+            else:
+                user.requests_counter += 1
+                if user.username is None:
+                    user.username = user_info.username
+                if user.first_name is None:
+                    user.first_name = user_info.first_name
+                if user.last_name is None:
+                    user.last_name = user_info.last_name
+                user.last_message_datetime = datetime.datetime.now()
+                session.commit()
 
-        if event.text.startswith('/test_announcement'):
-            await handle_test_announcement_command(event)
-            return
+            if event.text.startswith('/test_announcement'):
+                await handle_test_announcement_command(event)
+                return
 
-        if event.text.startswith('/announcement'):
-            await handle_announcement_command(event)
-            return
+            if event.text.startswith('/announcement'):
+                await handle_announcement_command(event)
+                return
 
-        if event.text == '/clear':
-            await safe_send_message(event.chat_id, "Conversation history cleared")
-            return
+            if event.text == '/clear':
+                await safe_send_message(event.chat_id, "Conversation history cleared")
+                return
 
-        if event.text == '/start' or event.text == '/help':
-            await handle_start_command(event)
-            return
+            if event.text == '/start' or event.text == '/help':
+                await handle_start_command(event)
+                return
 
-        if event.text.startswith('/remember'):
-            await handle_remember_command(event)
-            return
+            if event.text.startswith('/remember'):
+                await handle_remember_command(event, session)
+                return
 
-        if event.text.startswith('/memory'):
-            await handle_memory_command(event, user)
-            return
+            if event.text.startswith('/memory'):
+                await handle_memory_command(event, session)
+                return
 
-        if event.text.startswith('/summary') or event.text.startswith('/s '):
-            await handle_summary_command(event)
-            return
+            if event.text.startswith('/summary') or event.text.startswith('/s '):
+                await handle_summary_command(event)
+                return
 
-        if event.text.startswith('/'):
-            await safe_send_message(event.chat_id, "Unknown command")
-            await handle_start_command(event)
-            return
+            if event.text.startswith('/'):
+                await safe_send_message(event.chat_id, "Unknown command")
+                await handle_start_command(event)
+                return
 
-        async with client.action(event.chat_id, 'typing'):
-            conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
-            response = await generate_response(conversation_history, user.memory)
+            async with client.action(event.chat_id, 'typing'):
+                conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
+                response = await generate_response(conversation_history, user.memory)
 
-        await safe_send_message(event.chat_id, response)
+            await safe_send_message(event.chat_id, response)
     except Exception as e:
         await safe_send_message(int(config['TELEGRAM']['LOGGING_CHAT_ID']), f"Error in file {__file__}: {e}")
 
