@@ -1,7 +1,6 @@
 from sqlalchemy import Column, String, DateTime, Integer, create_engine, Boolean, ForeignKey
 from sqlalchemy.orm import DeclarativeBase, declared_attr
 from sqlalchemy.orm import Session, relationship
-from contextlib import contextmanager
 import datetime
 import os
 import psycopg2
@@ -47,22 +46,6 @@ class UserMessage(Base):
 User.user_messages = relationship("UserMessage", order_by=UserMessage.id, back_populates="user")
 
 
-@contextmanager
-def get_session():
-    engine = create_engine(
-        f"postgresql://{os.environ['ENV_DB_USER']}:{os.environ['ENV_DB_PASSWORD']}@{os.environ['ENV_DB_HOST']}:{os.environ['ENV_DB_PORT']}/{os.environ['ENV_DB_NAME']}")
-
-    session = Session(engine)
-
-    try:
-        yield session
-    except:
-        session.rollback()
-        raise
-    else:
-        session.commit()
-
-    return session
-
-session = get_session()
-
+#connect to postgresql
+engine = create_engine(f"postgresql://{os.environ['ENV_DB_USER']}:{os.environ['ENV_DB_PASSWORD']}@{os.environ['ENV_DB_HOST']}:{os.environ['ENV_DB_PORT']}/{os.environ['ENV_DB_NAME']}")
+session = Session(engine)
