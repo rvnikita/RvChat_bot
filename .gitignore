@@ -17,3 +17,6 @@
 # Ignore alembic
 /alembic/
 alembic.ini
+
+# Ignore temp.py for testing
+/temp.py
