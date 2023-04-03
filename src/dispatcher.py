@@ -23,12 +23,12 @@ config.read(config_path + 'settings.ini')
 openai.api_key = config['OPENAI']['KEY']
 client = TelegramClient(StringSession(config['TELEGRAM']['SESSION_STRING']), config['TELEGRAM']['API_ID'], config['TELEGRAM']['API_HASH'])
 
-async def safe_send_message(chat_id, message):
+async def safe_send_message(chat_id, message, link_preview=False):
     try:
         #split message into chunks of 4096 chars
         message_chunks = [message[i:i + 4096] for i in range(0, len(message), 4096)]
         for message_chunk in message_chunks:
-            await client.send_message(chat_id, message_chunk)
+            await client.send_message(chat_id, message_chunk, link_preview)
     except Exception as e:
         print(e)
 
