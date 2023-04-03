@@ -40,7 +40,7 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
 
         # Send the message
         #TODO:MED: Check, we may need get_dialogs() hack here before being able to send message
-        await client.send_message(user.id, message.message)
+        await client.send_message(user.id, message.message, link_preview=False)
         user_message.sent_at = datetime.datetime.utcnow()
         session.commit()
 
