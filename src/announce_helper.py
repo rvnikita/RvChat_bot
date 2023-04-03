@@ -34,6 +34,8 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
         .all()
     )
 
+    dialogs = await client.get_dialogs()
+
     for user_message in unsent_user_messages:
         message = user_message.message_queue
         user = session.query(User).filter(User.id == user_message.user_id).first()
