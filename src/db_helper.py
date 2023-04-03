@@ -51,7 +51,7 @@ User.user_messages = relationship("UserMessage", order_by=UserMessage.id, back_p
 session = None
 
 @contextmanager
-def session_scope(self):
+def session_scope():
     self.db_engine = create_engine(f"postgresql://{config['DB']['USER']}:{config['DB']['PASSWORD']}@{config['DB']['HOST']}:{config['DB']['PORT']}/{config['DB']['NAME']}")
     session = Session(self.db_engine)
 
