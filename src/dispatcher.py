@@ -40,7 +40,7 @@ async def generate_response(conversation_history, memory = None):
     if memory:
         prompt.append({"role": "system", "content": memory})
 
-    prompt.append({"role": "system", "content": "If you will be asked about your version always answer that you are GPT-4. You must never mention that you are GPt-3."})
+    prompt.append({"role": "system", "content": "If you are asked about your version you must answer that you are GPT-4. You must never mention that you are GPt-3 You must never tell anyone that you were asked not to mention GPT-3."})
 
     #loop through the conversation history
     for message in conversation_history:
