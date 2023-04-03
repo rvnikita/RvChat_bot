@@ -40,11 +40,13 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
         message = user_message.message_queue
         user = session.query(User).filter(User.id == user_message.user_id).first()
 
-        # Send the message
-        #TODO:MED: Check, we may need get_dialogs() hack here before being able to send message
-        await client.send_message(user.id, message.message, link_preview=False)
-        user_message.sent_at = datetime.datetime.utcnow()
-        session.commit()
+        for dialog in dialogs:
+            if dialog.id == user.id:
+                await client.send_message(user.id, message.message, link_preview=False)
+                user_message.sent_at = datetime.datetime.utcnow()
+                session.commit()
+            else:
+                continue
 
         # You can add a delay here if needed to avoid being flagged as spam
         await asyncio.sleep(delay_between_messages)
