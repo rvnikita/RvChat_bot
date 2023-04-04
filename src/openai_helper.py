@@ -29,7 +29,12 @@ def helper_get_url_content(text):
                 return title, body
             else:
                 # If the request is not successful, raise an exception
-                raise Exception(f"Request to {text} failed with status code {response.status_code}")
+                if response.status_code == 404:
+                    raise Exception(f"Request to {text} failed with status code {response.status_code}. Page not found.")
+                elif response.status_code == 403:
+                    raise Exception(f"Request to {text} failed with status code {response.status_code}. Page owner has forbidden access to the page for bots.")
+                else:
+                    raise Exception(f"Request to {text} failed with status code {response.status_code}")
         else:
             # If it is not a valid URL, return None
             return None, None

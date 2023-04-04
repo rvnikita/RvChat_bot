@@ -151,7 +151,11 @@ async def handle_summary_command(event):
 
     async with client.action(event.chat_id, 'typing', delay=5):
 
-        url_content_title, url_content_body = openai_helper.helper_get_url_content(url_or_text)
+        try:
+            url_content_title, url_content_body = openai_helper.helper_get_url_content(url_or_text)
+        except Exception as e:
+            await safe_send_message(event.chat_id, f"Error: {e}")
+            return
 
         # check if it's a url or a text
         if url_content_body is not None:  # so that was a valid url
