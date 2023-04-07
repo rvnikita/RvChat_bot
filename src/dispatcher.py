@@ -54,7 +54,7 @@ async def generate_response(conversation_history, memory = None):
         # await safe_send_message(LOGGING_CHAT_ID, json.dumps(prompt, indent=4))
 
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model=config['OPENAI']['COMPLETION_MODEL'],
             messages=prompt
         )
 
