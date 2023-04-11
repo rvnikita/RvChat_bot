@@ -1,6 +1,7 @@
 import src.db_helper as db_helper
 import src.openai_helper as openai_helper
 import src.announce_helper as announce_helper
+import src.logging_helper as logging
 
 
 import os
@@ -17,6 +18,8 @@ config = configparser.ConfigParser(os.environ)
 config_path = os.path.dirname(__file__) + '/../config/' #we need this trick to get path to config folder
 config.read(config_path + 'settings.ini')
 
+logger = logging.get_logger()
+
 #TODO:HIGH: move env variables to .env file
 # Get API credentials from environment variables
 #TODO:MED: rewrite this with logging module
@@ -31,7 +34,8 @@ async def safe_send_message(chat_id, message, link_preview=False):
         for message_chunk in message_chunks:
             await client.send_message(chat_id, message_chunk, link_preview=link_preview)
     except Exception as e:
-        print(traceback.format_exc())
+        logger.error(f"Error: {traceback.format_exc()}")
+        await client.send_message(chat_id, f"Error: {e}. Please try again later.")
 
 async def generate_response(conversation_history, memory = None):
     try:
@@ -62,7 +66,8 @@ async def generate_response(conversation_history, memory = None):
         reply_text = response.choices[0].message.content.strip()
         return reply_text
     except Exception as e:
-        reply_text = "Error: " + str(traceback.format_exc())
+        logger.error(f"Error: {traceback.format_exc()}")
+        reply_text = f"Error: {e}. Please try again later."
         return reply_text
 
 async def get_last_x_messages(client, channel_id, max_tokens = 4000):
@@ -155,7 +160,8 @@ async def handle_summary_command(event):
         try:
             url_content_title, url_content_body = openai_helper.helper_get_url_content(url_or_text)
         except Exception as e:
-            await safe_send_message(event.chat_id, f"Error: {traceback.format_exc()}")
+            logger.error(f"Error: {traceback.format_exc()}")
+            await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
             return
 
         # check if it's a url or a text
@@ -269,7 +275,8 @@ async def on_new_message(event):
 
             await safe_send_message(event.chat_id, response)
     except Exception as e:
-        await safe_send_message(int(config['TELEGRAM']['LOGGING_CHAT_ID']), {traceback.format_exc()})
+        logger.error(f"Error: {traceback.format_exc()}")
+        await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
 
 async def main():
     # Initialize the Telegram client
