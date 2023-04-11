@@ -58,10 +58,26 @@ async def generate_response(conversation_history, memory = None):
         # temporary log to admin
         # await safe_send_message(LOGGING_CHAT_ID, json.dumps(prompt, indent=4))
 
-        response = openai.ChatCompletion.create(
-            model=config['OPENAI']['COMPLETION_MODEL'],
-            messages=prompt
-        )
+        delay_between_attempts = 5
+        max_attempts = 5
+        for attempt in range(max_attempts): #try 5 times to get response from OpenAI
+            try:
+                response = openai.ChatCompletion.create(
+                    model=config['OPENAI']['COMPLETION_MODEL'],
+                    messages=prompt
+                )
+
+                reply_text = response.choices[0].message.content.strip()
+                return reply_text
+
+            except Exception as e:
+                if attempt < max_attempts - 1:
+                    await asyncio.sleep(delay_between_attempts)
+                    continue
+                else:
+                    logger.error(f"Error: {traceback.format_exc()}")
+                    reply_text = f"Error: {e}. Please try again later."
+                    return reply_text
 
         reply_text = response.choices[0].message.content.strip()
         return reply_text
