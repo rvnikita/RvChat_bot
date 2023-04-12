@@ -298,6 +298,8 @@ async def main():
     # Initialize the Telegram client
     # Connect and sign in using the phone number
 
+    logger.info("Connecting to Telegram...")
+
     await client.start()
 
     client.add_event_handler(on_new_message, events.NewMessage)
