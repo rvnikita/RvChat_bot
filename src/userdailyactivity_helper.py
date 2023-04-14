@@ -14,7 +14,6 @@ logger = logging.get_logger()
 def update_userdailyactivity(user_id, command=None, usage_count=None, prompt_tokens=None, completion_tokens=None):
     try:
         with db_helper.session_scope() as session:
-            print(user_id, command)
             user_daily_activity = session.query(db_helper.UserDailyActivity).filter_by(user_id=user_id, command_name=command).first()
 
             if user_daily_activity is None:
