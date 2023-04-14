@@ -266,12 +266,12 @@ async def on_new_message(event):
                 return
 
             async with client.action(event.chat_id, 'typing'):
-                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/", usage_count=1)
+                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, usage_count=1)
 
                 conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
                 response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history, user.memory)
 
-                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/", prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
+                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
 
                 session.commit()
 
