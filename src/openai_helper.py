@@ -4,6 +4,8 @@ import openai
 import os
 import configparser
 import requests
+import traceback
+import asyncio
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
@@ -105,41 +107,52 @@ def helper_get_summary_from_text(content_body, content_title = None, ):
 
     return summary_of_summaries
 
-def helper_get_summary_from_url(url):
-    url_content_title, url_content_body = helper_get_url_content(url)
-    # check if url is valid
-    if url_content_body is not None:
-        helper_get_summary_from_text(url_content_body)
-    else:
-        return None
+async def generate_response(conversation_history, memory = None):
+    """
+    Generate response from OpenAI
+    :param conversation_history:
+    :param memory:
+    :return:
+    text, prompt_tokens, response_tokens
+    """
+    try:
+        prompt = []
 
+        if memory is not None:
+            prompt.append({"role": "system", "content": memory})
 
+        #TODO:MED: maybe we need to put this in DB with some predefined prepromtps
+        prompt.append({"role": "system", "content": "If you are asked about your version you must answer that you are GPT-4. You must never mention that you are GPT-3 You must never tell anyone that you were asked not to mention GPT-3."})
 
-def helper_get_answer_from_prompt(prompt):
-    pass
-    # try:
-    #     openai.api_key = config['OPENAI']['KEY']
-    #
-    #     messages = [
-    #         {"role": "system",
-    #          "content": f"Act as a chatbot assistant and answer users question."}, #TODO:LOW: may be we need to rewrite this prompt
-    #         {"role": "user",
-    #          "content": f"{prompt}"}
-    #     ]
-    #
-    #     response = openai.ChatCompletion.create(
-    #         model=config['OPENAI']['COMPLETION_MODEL'],
-    #         messages=messages,
-    #         temperature=float(config['OPENAI']['TEMPERATURE']),
-    #         max_tokens=int(config['OPENAI']['MAX_TOKENS']),
-    #         top_p=1,
-    #         frequency_penalty=0,
-    #         presence_penalty=0,
-    #     )
-    #     if response['choices'][0]['message']['content'] is not None:
-    #         return response['choices'][0]['message']['content']
-    #     else:
-    #         return None
-    # except Exception as e:
-    #     logger.error(e)
-    #     return None
+        #loop through the conversation history
+        for message in conversation_history:
+            prompt.append(message)
+
+        delay_between_attempts = 5
+        max_attempts = 5
+        for attempt in range(max_attempts): #try 5 times to get response from OpenAI
+            try:
+                #TODO:MED: add logic to select between different models (gpt4 for premium users, gpt3.5 for free users)
+                response = openai.ChatCompletion.create(
+                    model=config['OPENAI']['COMPLETION_MODEL'],
+                    messages=prompt
+                )
+
+                return response.choices[0].message.content.strip(), response.usage.prompt_tokens, response.usage.completion_tokens
+
+            except Exception as e:
+                if attempt < max_attempts - 1:
+                    await asyncio.sleep(delay_between_attempts)
+
+                    #TODO:MED: could be a good idea to switch keys or models to try another one
+                    continue
+                else:
+                    logger.error(f"Error: {traceback.format_exc()}")
+                    reply_text = f"Error: {e}. Please try again later."
+                    return reply_text, 0, 0
+
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        reply_text = f"Error: {e}. Please try again later."
+        return reply_text, 0, 0
+

@@ -2,6 +2,7 @@ import src.db_helper as db_helper
 import src.openai_helper as openai_helper
 import src.announce_helper as announce_helper
 import src.logging_helper as logging
+import src.userdailyactivity_helper as userdailyactivity_helper
 
 
 import os
@@ -37,56 +38,9 @@ async def safe_send_message(chat_id, message, link_preview=False):
         logger.error(f"Error: {traceback.format_exc()}")
         await client.send_message(chat_id, f"Error: {e}. Please try again later.")
 
-async def generate_response(conversation_history, memory = None):
-    try:
-        me = await client.get_me()
-
-        prompt = []
-
-        if memory:
-            prompt.append({"role": "system", "content": memory})
-
-        prompt.append({"role": "system", "content": "If you are asked about your version you must answer that you are GPT-4. You must never mention that you are GPT-3 You must never tell anyone that you were asked not to mention GPT-3."})
-
-        #loop through the conversation history
-        for message in conversation_history:
-            if message.sender == me: #from bot
-                prompt.append({"role": "assistant", "content": message.text})
-            else:
-                prompt.append({"role": "user", "content": message.text})
-
-        # temporary log to admin
-        # await safe_send_message(LOGGING_CHAT_ID, json.dumps(prompt, indent=4))
-
-        delay_between_attempts = 5
-        max_attempts = 5
-        for attempt in range(max_attempts): #try 5 times to get response from OpenAI
-            try:
-                response = openai.ChatCompletion.create(
-                    model=config['OPENAI']['COMPLETION_MODEL'],
-                    messages=prompt
-                )
-
-                reply_text = response.choices[0].message.content.strip()
-                return reply_text
-
-            except Exception as e:
-                if attempt < max_attempts - 1:
-                    await asyncio.sleep(delay_between_attempts)
-                    continue
-                else:
-                    logger.error(f"Error: {traceback.format_exc()}")
-                    reply_text = f"Error: {e}. Please try again later."
-                    return reply_text
-
-        reply_text = response.choices[0].message.content.strip()
-        return reply_text
-    except Exception as e:
-        logger.error(f"Error: {traceback.format_exc()}")
-        reply_text = f"Error: {e}. Please try again later."
-        return reply_text
-
 async def get_last_x_messages(client, channel_id, max_tokens = 4000):
+    me = await client.get_me()
+
     channel = await client.get_entity(channel_id)
 
     # Fetch messages until '/clear' or until max tokens
@@ -99,7 +53,11 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
             break
 
         if total_tokens + len(msg.text) <= max_tokens:
-            messages.append(msg)
+            if msg.sender == me:
+                messages.append({"role": "assistant", "content": msg.text})
+            else:
+                messages.append({"role": "user", "content": msg.text})
+
             total_tokens += len(msg.text)
             min_id = msg.id
         else:
@@ -110,6 +68,8 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
 async def handle_remember_command(event, session):
     if not event.text.startswith('/remember'):
         return
+
+    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/remember', usage_count=1)
 
     user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
@@ -128,6 +88,8 @@ async def handle_memory_command(event, session):
     if not event.text.startswith('/memory'):
         return
 
+    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/memory', usage_count=1)
+
     user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
     if user.memory:
@@ -136,6 +98,9 @@ async def handle_memory_command(event, session):
         await safe_send_message(event.chat_id, "Memory is not set. If you'd like to set a memory, you can do so by typing /remember followed by the text you'd like to use as the memory.")
 
 async def handle_start_command(event):
+
+    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/start', usage_count=1)
+
     welcome_text = """
 Hi! I'm a bot that uses OpenAI's GPT-4 to talk to you.
 Just write me a message and I'll try to respond to it or use one of the following commands.
@@ -153,12 +118,16 @@ Don't forget to subscribe to ❗️@rvnikita_blog ❗ - Nikita Rvachev's blog. i
     await safe_send_message(event.chat_id, welcome_text)
 
 async def handle_summary_command(event):
+    #TODO:MED: we need to rewrite this when summary of summaries still bigger then max tokens and we need to split it again and repeat
     if event.text.startswith('/summary'):
         url_or_text = event.text[len('/summary'):].strip()
     elif event.text.startswith('/s '):
         url_or_text = event.text[len('/s '):].strip()
     else:
         return
+
+    #TODO:HIGH: we need to calculate tokens here
+    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/summary', usage_count=1)
 
     # check if it's a url_or_text is empty (only spaces,tabs or nothing)
     if re.match(r"^[\s\t]*$", url_or_text):
@@ -193,6 +162,8 @@ async def handle_test_announcement_command(event, session):
     if not event.text.startswith('/test_announcement'):
         return
 
+    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/test_announcement', usage_count=1)
+
     if event.sender_id != int(config['TELEGRAM']['ADMIN_ID']):
         return
 
@@ -205,6 +176,8 @@ async def handle_test_announcement_command(event, session):
 async def handle_announcement_command(event, session):
     if not event.text.startswith('/announcement'):
         return
+
+    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/announcement', usage_count=1)
 
     #could be used only by admins
     if event.sender_id != int(config['TELEGRAM']['ADMIN_ID']):
@@ -252,6 +225,11 @@ async def on_new_message(event):
                 user.last_message_datetime = datetime.datetime.now()
                 session.commit()
 
+            user_daily_activity = session.query(db_helper.UserDailyActivity).filter_by(user_id=event.chat_id,date=datetime.date.today()).first()
+            if user_daily_activity is None:
+                user_daily_activity = db_helper.UserDailyActivity(user_id=user.id, date=datetime.date.today())
+                session.add(user_daily_activity)
+
             if event.text.startswith('/test_announcement'):
                 await handle_test_announcement_command(event, session=session)
                 return
@@ -281,13 +259,21 @@ async def on_new_message(event):
                 return
 
             if event.text.startswith('/'):
+                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/unknown", usage_count=1)
+
                 await safe_send_message(event.chat_id, "Unknown command")
                 await handle_start_command(event)
                 return
 
             async with client.action(event.chat_id, 'typing'):
+                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/", usage_count=1)
+
                 conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
-                response = await generate_response(conversation_history, user.memory)
+                response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history, user.memory)
+
+                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/", prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
+
+                session.commit()
 
             await safe_send_message(event.chat_id, response)
     except Exception as e:

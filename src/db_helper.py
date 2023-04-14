@@ -12,6 +12,7 @@ config = configparser.ConfigParser(os.environ)
 config_path = os.path.dirname(__file__) + '/../config/' #we need this trick to get path to config folder
 config.read(config_path + 'settings.ini')
 
+#TODO:HIGH: разобраться с расхождениями alembic в таблицах rvchatbot_messagequeue и rvchatbot_usermessage
 
 class Base(DeclarativeBase):
     __prefix__ = 'rvchatbot_'
@@ -33,6 +34,22 @@ class User(Base):
     memory = Column(String)
     requests_counter = Column(Integer, default=0)
 
+
+class UserDailyActivity(Base):
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = Column(BigInteger, ForeignKey(User.__table__.c.id))
+    date = Column(DateTime, default=datetime.date.today)
+
+    command_name = Column(String)
+    usage_count = Column(Integer, default=0)
+    prompt_tokens = Column(Integer, default=0)
+    completion_tokens = Column(Integer, default=0)
+
+    user = relationship("User", back_populates="daily_activities")
+
+User.daily_activities = relationship("UserDailyActivity", order_by=UserDailyActivity.date, back_populates="user")
+
+
 class MessageQueue(Base):
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     message = Column(String, nullable=False)
@@ -43,8 +60,8 @@ class MessageQueue(Base):
 
 class UserMessage(Base):
     id = Column(BigInteger, primary_key=True)
-    user_id = Column(BigInteger, ForeignKey('rvchatbot_user.id'))
-    message_queue_id = Column(BigInteger, ForeignKey('rvchatbot_messagequeue.id'))
+    user_id = Column(BigInteger, ForeignKey(User.__table__.c.id))
+    message_queue_id = Column(BigInteger, ForeignKey(MessageQueue.__table__.c.id))
 
     sent_at = Column(DateTime, nullable=True)
 
@@ -52,6 +69,8 @@ class UserMessage(Base):
     message_queue = relationship("MessageQueue", back_populates="user_messages")
 
 User.user_messages = relationship("UserMessage", order_by=UserMessage.id, back_populates="user")
+
+
 
 
 #connect to postgresql
