@@ -52,6 +52,9 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
         if msg.text == '/clear' or msg.text == 'Conversation history cleared':
             break
 
+        if msg.text in None:
+            continue
+
         if total_tokens + len(msg.text) <= max_tokens:
             if msg.sender == me:
                 messages.append({"role": "assistant", "content": msg.text})
