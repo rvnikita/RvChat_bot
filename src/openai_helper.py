@@ -66,49 +66,39 @@ def get_summary_from_text(content_body, content_title=None, char_limit=2000):
         )
         return response['choices'][0]['message']['content'], response.usage.prompt_tokens, response.usage.completion_tokens
 
-    content_chunks = chunk_text(content_body)
+    summary = content_body
 
-    summary_chunks = []
-
-    for i, content_chunk in enumerate(content_chunks):
-        chunk_messages = [
-            {"role": "system",
-             "content": f"Give me a takeaway summary for this text"},
-            {"role": "user",
-             "content": f"Title: {content_title}"},
-            {"role": "user",
-             "content": f"Content {i}:  {content_chunk}"}
-        ]
-
-        summary_chunk, prompt_tokens_chunk, completion_tokens_chunk = generate_summary(chunk_messages)
-        summary_chunks.append(summary_chunk)
-        prompt_tokens += prompt_tokens_chunk
-        completion_tokens += completion_tokens_chunk
-        print(f"Generating summary... {i}")
-
-    summary = " ".join(summary_chunks)
-    final_summary = ""
-
-    while len(final_summary) == 0 or len(final_summary) > char_limit:
+    while True:
         summary_chunks = chunk_text(summary)
+        new_summary_chunks = []
 
-        messages = [
-            {"role": "system",
-             "content": f"Give me a takeaway summary based on title and texts."},
-            {"role": "user",
-             "content": f"Title: {content_title}"}
-        ]
+        new_prompt_tokens, new_completion_tokens = 0, 0
 
-        for j, summary_chunk in enumerate(summary_chunks):
-            messages.append({"role": "user",
-                             "content": f"Content {j}:  {summary_chunk}"})
-        messages.append({"role": "user",
-                         "content": f"Summary:"})
+        for i, summary_chunk in enumerate(summary_chunks):
+            chunk_messages = [
+                {"role": "system",
+                 "content": f"Give me a takeaway summary for this text"},
+                {"role": "user",
+                 "content": f"Title: {content_title}"},
+                {"role": "user",
+                 "content": f"Content {i}:  {summary_chunk}"}
+            ]
 
-        final_summary, final_prompt_tokens, final_completion_token = generate_summary(messages)
-        summary = final_summary
-        prompt_tokens += final_prompt_tokens
-        completion_tokens += final_completion_token
+            new_summary_chunk, prompt_tokens_chunk, completion_tokens_chunk = generate_summary(chunk_messages)
+            new_summary_chunks.append(new_summary_chunk)
+            new_prompt_tokens += prompt_tokens_chunk
+            new_completion_tokens += completion_tokens_chunk
+            print(f"Generating summary... {i}")
+
+        new_summary = " ".join(new_summary_chunks)
+
+        if len(new_summary) <= char_limit:
+            final_summary = new_summary
+            prompt_tokens += new_prompt_tokens
+            completion_tokens += new_completion_tokens
+            break
+        else:
+            summary = new_summary
 
     return final_summary, prompt_tokens, completion_tokens
 
