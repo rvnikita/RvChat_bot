@@ -15,7 +15,7 @@ config.read(config_path + 'settings.ini')
 
 logger = logging.get_logger()
 
-def helper_get_url_content(text):
+def get_url_content(text):
     # Check if the input text is a valid URL
     try:
         result = urlparse(text)
@@ -44,13 +44,29 @@ def helper_get_url_content(text):
         # If there is an error parsing the URL, return None
         return None, None
 
-def helper_get_summary_from_text(content_body, content_title = None, ):
-    #TODO:HIGH: seems like we need to move this helpers to a separate openai file
-    # get openai summary from url_content
+def get_summary_from_text(content_body, content_title=None, char_limit=2000):
+    print(len(content_body))
+
+    prompt_tokens, completion_tokens = 0, 0
+
     openai.api_key = config['OPENAI']['KEY']
 
-    # split content into chunks of 2000 chars and loop through them
-    content_chunks = [content_body[i:i + 2000] for i in range(0, len(content_body), 2000)]
+    def chunk_text(text, chunk_size=2000):
+        return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
+
+    def generate_summary(messages):
+        response = openai.ChatCompletion.create(
+            model=config['OPENAI']['COMPLETION_MODEL'],
+            messages=messages,
+            temperature=float(config['OPENAI']['TEMPERATURE']),
+            max_tokens=int(config['OPENAI']['MAX_TOKENS']),
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+        )
+        return response['choices'][0]['message']['content'], response.usage.prompt_tokens, response.usage.completion_tokens
+
+    content_chunks = chunk_text(content_body)
 
     summary_chunks = []
 
@@ -64,48 +80,37 @@ def helper_get_summary_from_text(content_body, content_title = None, ):
              "content": f"Content {i}:  {content_chunk}"}
         ]
 
-        response = openai.ChatCompletion.create(
-            model=config['OPENAI']['COMPLETION_MODEL'],
-            messages=chunk_messages,
-            temperature=float(config['OPENAI']['TEMPERATURE']),
-            max_tokens=int(config['OPENAI']['MAX_TOKENS']),
-            top_p=1,
-            frequency_penalty=0,
-            presence_penalty=0,
-        )
-        if response['choices'][0]['message']['content'] is not None:
-            summary_chunks.append(response['choices'][0]['message']['content'])
-
-        #TODO:LOW: it's a good idea to edit previous message adding a dot at each iteration for Generating summary...
+        summary_chunk, prompt_tokens_chunk, completion_tokens_chunk = generate_summary(chunk_messages)
+        summary_chunks.append(summary_chunk)
+        prompt_tokens += prompt_tokens_chunk
+        completion_tokens += completion_tokens_chunk
         print(f"Generating summary... {i}")
 
-    #TODO:MED: summary_chunks togetter also could be bigger then maximum allowed tokes. We need to check this and maybe make another itteraction of summarization of summary by chanks.
+    summary = " ".join(summary_chunks)
+    final_summary = ""
 
-    messages = [
-        {"role": "system",
-         "content": f"Give me a takeaway summary based on title and texts."},
-        {"role": "user",
-         "content": f"Title: {content_title}"}
-    ]
-    # now let's run through the summary chunks and get a summary of the summaries
-    for j, summary_chunk in enumerate(summary_chunks):
+    while len(final_summary) == 0 or len(final_summary) > char_limit:
+        summary_chunks = chunk_text(summary)
+
+        messages = [
+            {"role": "system",
+             "content": f"Give me a takeaway summary based on title and texts."},
+            {"role": "user",
+             "content": f"Title: {content_title}"}
+        ]
+
+        for j, summary_chunk in enumerate(summary_chunks):
+            messages.append({"role": "user",
+                             "content": f"Content {j}:  {summary_chunk}"})
         messages.append({"role": "user",
-                         "content": f"Content {j}:  {summary_chunk}"})
-    messages.append({"role": "user",
-                     "content": f"Summary:"})
+                         "content": f"Summary:"})
 
-    response = openai.ChatCompletion.create(
-        model=config['OPENAI']['COMPLETION_MODEL'],
-        messages=messages,
-        temperature=float(config['OPENAI']['TEMPERATURE']),
-        max_tokens=int(config['OPENAI']['MAX_TOKENS']),
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0,
-    )
-    summary_of_summaries = response['choices'][0]['message']['content']
+        final_summary, final_prompt_tokens, final_completion_token = generate_summary(messages)
+        summary = final_summary
+        prompt_tokens += final_prompt_tokens
+        completion_tokens += final_completion_token
 
-    return summary_of_summaries
+    return final_summary, prompt_tokens, completion_tokens
 
 async def generate_response(conversation_history, memory = None):
     """

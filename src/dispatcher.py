@@ -146,7 +146,7 @@ async def handle_summary_command(event):
     async with client.action(event.chat_id, 'typing', delay=5):
 
         try:
-            url_content_title, url_content_body = openai_helper.helper_get_url_content(url_or_text)
+            url_content_title, url_content_body = openai_helper.get_url_content(url_or_text)
         except Exception as e:
             logger.error(f"Error: {traceback.format_exc()}")
             await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
@@ -154,10 +154,13 @@ async def handle_summary_command(event):
 
         # check if it's a url or a text
         if url_content_body is not None:  # so that was a valid url
-            summary = openai_helper.helper_get_summary_from_text(url_content_body, url_content_title)
+            summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_content_body, url_content_title)
         else:  # so that was a text
             # FIXME: we can get url_content_body = None even for valid url. So this else is not 100% correct
-            summary = openai_helper.helper_get_summary_from_text(url_or_text)
+            summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_or_text)
+
+        if prompt_tokens != 0:
+            userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/summary', prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
 
         await safe_send_message(event.chat_id, summary)
 
