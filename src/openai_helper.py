@@ -46,6 +46,8 @@ def get_url_content(text):
 
 def get_summary_from_text(content_body, content_title=None, char_limit=2000):
     print(len(content_body))
+    if len(content_body) > 120000:
+        return "Sorry, content is way to big (more than 120 000 symbols).", 0, 0
 
     prompt_tokens, completion_tokens = 0, 0
 
