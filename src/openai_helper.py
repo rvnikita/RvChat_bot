@@ -74,8 +74,6 @@ def get_summary_from_text(content_body, content_title=None, char_limit=2000):
         summary_chunks = chunk_text(summary)
         new_summary_chunks = []
 
-        new_prompt_tokens, new_completion_tokens = 0, 0
-
         for i, summary_chunk in enumerate(summary_chunks):
             chunk_messages = [
                 {"role": "system",
@@ -88,16 +86,14 @@ def get_summary_from_text(content_body, content_title=None, char_limit=2000):
 
             new_summary_chunk, prompt_tokens_chunk, completion_tokens_chunk = generate_summary(chunk_messages)
             new_summary_chunks.append(new_summary_chunk)
-            new_prompt_tokens += prompt_tokens_chunk
-            new_completion_tokens += completion_tokens_chunk
+            prompt_tokens += int(prompt_tokens_chunk)
+            completion_tokens += int(completion_tokens_chunk)
             print(f"Generating summary... {i}")
 
         new_summary = " ".join(new_summary_chunks)
 
         if len(new_summary) <= char_limit:
             final_summary = new_summary
-            prompt_tokens += new_prompt_tokens
-            completion_tokens += new_completion_tokens
             break
         else:
             summary = new_summary
