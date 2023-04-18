@@ -128,7 +128,7 @@ async def handle_summary_command(event):
     else:
         return
 
-    #TODO:HIGH: we need to calculate tokens here
+    #TODO:HIGH: we need to calculate tokens here with special library
     userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/summary', usage_count=1)
 
     # check if it's a url_or_text is empty (only spaces,tabs or nothing)
