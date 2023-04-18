@@ -121,7 +121,6 @@ Don't forget to subscribe to ❗️@rvnikita_blog ❗ - Nikita Rvachev's blog. i
     await safe_send_message(event.chat_id, welcome_text)
 
 async def handle_summary_command(event):
-    #TODO:MED: we need to rewrite this when summary of summaries still bigger then max tokens and we need to split it again and repeat
     if event.text.startswith('/summary'):
         url_or_text = event.text[len('/summary'):].strip()
     elif event.text.startswith('/s '):
