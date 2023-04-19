@@ -155,10 +155,10 @@ async def handle_summary_command(event):
 
             # check if it's a url or a text
             if url_content_body is not None:  # so that was a valid url
-                summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_content_body, url_content_title, model=user.model)
+                summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_content_body, url_content_title, model=user.openai_model)
             else:  # so that was a text
                 # FIXME: we can get url_content_body = None even for valid url. So this else is not 100% correct
-                summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_or_text, model=user.model)
+                summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_or_text, model=user.openai_model)
 
             if prompt_tokens != 0:
                 userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/summary', prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
@@ -275,7 +275,7 @@ async def on_new_message(event):
                 userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, usage_count=1)
 
                 conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
-                response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history, user.memory, model=user.model)
+                response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history, user.memory, model=user.openai_model)
 
                 userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
 
