@@ -49,6 +49,8 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
     min_id = None
 
     async for msg in client.iter_messages(channel):
+
+        #TODO:MED: maybe we need to take not whole coversation, but only last day. So we don't use context from old messages
         if msg.text == '/clear' or msg.text == 'Conversation history cleared':
             break
 
