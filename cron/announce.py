@@ -12,7 +12,7 @@ config = configparser.ConfigParser(os.environ)
 config_path = os.path.dirname(__file__) + '/../config/'
 config.read(config_path + 'settings.ini')
 
-client = TelegramClient(StringSession(config['TELEGRAM']['SESSION_STRING']), config['TELEGRAM']['API_ID'], config['TELEGRAM']['API_HASH'])
+client = TelegramClient(StringSession(config['TELEGRAM']['MAILER_SESSION_STRING']), config['TELEGRAM']['API_ID'], config['TELEGRAM']['API_HASH'])
 
 async def main():
     await client.start()
