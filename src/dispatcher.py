@@ -120,6 +120,30 @@ Don't forget to subscribe to ❗️@rvnikita_blog ❗ - Nikita Rvachev's blog. i
 
     await safe_send_message(event.chat_id, welcome_text)
 
+async def handle_default(event):
+    if event.text.startswith('/'):
+        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/unknown", usage_count=1)
+
+        await safe_send_message(event.chat_id, "Unknown command")
+        await handle_start_command(event)
+        return
+
+    async with client.action(event.chat_id, 'typing'):
+        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, usage_count=1)
+
+        conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
+        response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history,
+                                                                                           user.memory,
+                                                                                           model=user.openai_model)
+
+        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None,
+                                                          prompt_tokens=prompt_tokens,
+                                                          completion_tokens=completion_tokens)
+
+        session.commit()
+
+    await safe_send_message(event.chat_id, response)
+
 async def handle_summary_command(event):
     if event.text.startswith('/summary'):
         url_or_text = event.text[len('/summary'):].strip()
@@ -220,6 +244,7 @@ async def on_new_message(event):
                 session.commit()
 
                 await handle_start_command(event)
+                await handle_default(event)
                 return
             else:
                 if user.username is None:
@@ -264,24 +289,9 @@ async def on_new_message(event):
                 await handle_summary_command(event)
                 return
 
-            if event.text.startswith('/'):
-                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/unknown", usage_count=1)
+            await handle_default(event)
+            return
 
-                await safe_send_message(event.chat_id, "Unknown command")
-                await handle_start_command(event)
-                return
-
-            async with client.action(event.chat_id, 'typing'):
-                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, usage_count=1)
-
-                conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
-                response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history, user.memory, model=user.openai_model)
-
-                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
-
-                session.commit()
-
-            await safe_send_message(event.chat_id, response)
     except Exception as e:
         logger.error(f"Error: {traceback.format_exc()}")
         await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
