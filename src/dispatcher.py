@@ -128,19 +128,22 @@ async def handle_default(event):
         await handle_start_command(event)
         return
 
-    async with client.action(event.chat_id, 'typing'):
-        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, usage_count=1)
+    with db_helper.session_scope() as session:
+        user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
-        conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
-        response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history,
-                                                                                           user.memory,
-                                                                                           model=user.openai_model)
+        async with client.action(event.chat_id, 'typing'):
+            userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, usage_count=1)
 
-        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None,
-                                                          prompt_tokens=prompt_tokens,
-                                                          completion_tokens=completion_tokens)
+            conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
+            response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history,
+                                                                                               user.memory,
+                                                                                               model=user.openai_model)
 
-        session.commit()
+            userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None,
+                                                              prompt_tokens=prompt_tokens,
+                                                              completion_tokens=completion_tokens)
+
+            session.commit()
 
     await safe_send_message(event.chat_id, response)
 
