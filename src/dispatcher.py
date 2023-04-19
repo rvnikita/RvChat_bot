@@ -150,18 +150,20 @@ async def handle_summary_command(event):
             logger.error(f"Error: {traceback.format_exc()}")
             await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
             return
+        with db_helper.session_scope as session:
+            user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
-        # check if it's a url or a text
-        if url_content_body is not None:  # so that was a valid url
-            summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_content_body, url_content_title)
-        else:  # so that was a text
-            # FIXME: we can get url_content_body = None even for valid url. So this else is not 100% correct
-            summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_or_text)
+            # check if it's a url or a text
+            if url_content_body is not None:  # so that was a valid url
+                summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_content_body, url_content_title, model=user.model)
+            else:  # so that was a text
+                # FIXME: we can get url_content_body = None even for valid url. So this else is not 100% correct
+                summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_or_text, model=user.model)
 
-        if prompt_tokens != 0:
-            userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/summary', prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
+            if prompt_tokens != 0:
+                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/summary', prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
 
-        await safe_send_message(event.chat_id, summary)
+            await safe_send_message(event.chat_id, summary)
 
 async def handle_test_announcement_command(event, session):
     if not event.text.startswith('/test_announcement'):
@@ -273,7 +275,7 @@ async def on_new_message(event):
                 userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, usage_count=1)
 
                 conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
-                response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history, user.memory)
+                response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history, user.memory, model=user.model)
 
                 userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
 
