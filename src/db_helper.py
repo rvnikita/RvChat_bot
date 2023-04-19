@@ -32,7 +32,7 @@ class User(Base):
     status = Column(String)
     last_message_datetime = Column(DateTime(timezone=True))
     memory = Column(String)
-    requests_counter = Column(Integer, default=0)
+    openai_model = Column(String, nullable=True)
 
 
 class UserDailyActivity(Base):

@@ -44,7 +44,7 @@ def get_url_content(text):
         # If there is an error parsing the URL, return None
         return None, None
 
-def get_summary_from_text(content_body, content_title=None, char_limit=2000):
+def get_summary_from_text(content_body, content_title=None, char_limit=2000, model=None):
     print(len(content_body))
     if len(content_body) > 120000:
         return "Sorry, content is way to big (more than 120 000 symbols).", 0, 0
@@ -57,8 +57,9 @@ def get_summary_from_text(content_body, content_title=None, char_limit=2000):
         return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
 
     def generate_summary(messages):
+
         response = openai.ChatCompletion.create(
-            model=config['OPENAI']['COMPLETION_MODEL'],
+            model=model if model != None else config['OPENAI']['COMPLETION_MODEL'],
             messages=messages,
             temperature=float(config['OPENAI']['TEMPERATURE']),
             max_tokens=int(config['OPENAI']['MAX_TOKENS']),
@@ -100,7 +101,7 @@ def get_summary_from_text(content_body, content_title=None, char_limit=2000):
 
     return final_summary, prompt_tokens, completion_tokens
 
-async def generate_response(conversation_history, memory = None):
+async def generate_response(conversation_history, memory = None, model=None):
     """
     Generate response from OpenAI
     :param conversation_history:
@@ -127,7 +128,7 @@ async def generate_response(conversation_history, memory = None):
             try:
                 #TODO:MED: add logic to select between different models (gpt4 for premium users, gpt3.5 for free users)
                 response = openai.ChatCompletion.create(
-                    model=config['OPENAI']['COMPLETION_MODEL'],
+                    model=model if model != None else config['OPENAI']['COMPLETION_MODEL'],
                     messages=prompt
                 )
 

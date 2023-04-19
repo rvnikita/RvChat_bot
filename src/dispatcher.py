@@ -220,7 +220,6 @@ async def on_new_message(event):
                 await handle_start_command(event)
                 return
             else:
-                user.requests_counter += 1
                 if user.username is None:
                     user.username = user_info.username
                 if user.first_name is None:
