@@ -104,6 +104,8 @@ async def handle_memory_command(event, session):
 
 async def handle_start_command(event):
 
+
+
     userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/start', usage_count=1)
 
     welcome_text = """

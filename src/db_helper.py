@@ -89,3 +89,4 @@ def session_scope():
         raise
     finally:
         session.close()
+        db_engine.dispose()
