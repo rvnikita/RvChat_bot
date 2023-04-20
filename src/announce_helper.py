@@ -55,15 +55,20 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                 except Exception as e:
                     logging.error(f"Error sending message to user {user.id}: {e}")
                     user_message.status = 'error'
-                    message_processed
+                    message_processed = True
                 finally:
                     break
             else:
                 continue
 
-        if message_processed == False:
-            logger.error(f"Error sending message to user {user.id}: Haven't find this user in the list of dialogs")
-            user_message.status = 'error'
+        if message_processed == False: #if we haven't find user in the list of dialogs, try to send anyway
+            try:
+                await client.send_message(user.id, message.message, link_preview=False)
+                user_message.sent_at = datetime.datetime.utcnow()
+                user_message.status = 'sent'
+            except Exception as e:
+                logging.error(f"Error sending message to user {user.id}: {e}")
+                user_message.status = 'error'
 
         session.commit()
 
