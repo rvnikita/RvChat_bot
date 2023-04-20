@@ -41,6 +41,8 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
         message = user_message.message_queue
         user = session.query(User).filter(User.id == user_message.user_id).first()
 
+        message_sent = False
+
         for dialog in dialogs:
             if dialog.id == user.id:
                 try:
@@ -51,6 +53,10 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                     logging.error(f"Error sending message to user {user.id}: {e}")
                     user_message.status = 'error'
                 finally:
+                    if message_sent == False:
+                        logging.error(f"Error sending message to user {user.id}: Haven't find this user in the list of dialogs")
+                        user_message.status = 'error'
+
                     session.commit()
             else:
                 continue
