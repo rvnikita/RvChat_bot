@@ -181,7 +181,7 @@ async def handle_summary_command(event):
             logger.error(f"Error: {traceback.format_exc()}")
             await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
             return
-        with db_helper.session_scope as session:
+        with db_helper.session_scope() as session:
             user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
             # check if it's a url or a text
