@@ -1,4 +1,5 @@
 from src.db_helper import session, User, MessageQueue, UserMessage
+import src.logging_helper as logging
 
 import asyncio
 import os
@@ -20,7 +21,7 @@ async def add_message_to_queue(message, is_test=False, session=None):
     else:
         users = session.query(User).all()
     for user in users:
-        user_message = UserMessage(user_id=user.id, message_queue_id=new_message.id, sent_at=None)
+        user_message = UserMessage(user_id=user.id, message_queue_id=new_message.id, status='queued')
         session.add(user_message)
     session.commit()
 
@@ -28,7 +29,7 @@ async def add_message_to_queue(message, is_test=False, session=None):
 async def process_message_queue(client, messages_to_send=10, delay_between_messages=10, session=None):
     unsent_user_messages = (
         session.query(UserMessage)
-        .filter(UserMessage.sent_at.is_(None))
+        .filter(UserMessage.status == 'queued')
         .join(MessageQueue)
         .limit(messages_to_send)
         .all()
@@ -42,9 +43,15 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
 
         for dialog in dialogs:
             if dialog.id == user.id:
-                await client.send_message(user.id, message.message, link_preview=False)
-                user_message.sent_at = datetime.datetime.utcnow()
-                session.commit()
+                try:
+                    await client.send_message(user.id, message.message, link_preview=False)
+                    user_message.sent_at = datetime.datetime.utcnow()
+                    user_message.status = 'sent'
+                except Exception as e:
+                    logging.error(f"Error sending message to user {user.id}: {e}")
+                    user_message.status = 'error'
+                finally:
+                    session.commit()
             else:
                 continue
 
