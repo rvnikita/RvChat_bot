@@ -53,7 +53,7 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                     user_message.status = 'sent'
                     message_processed = True
                 except Exception as e:
-                    logging.error(f"Error sending message to user {user.id}: {e}")
+                    logger.error(f"Error sending message to user {user.id}: {e}")
                     user_message.status = 'error'
                     message_processed = True
                 finally:
@@ -67,7 +67,7 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                 user_message.sent_at = datetime.datetime.utcnow()
                 user_message.status = 'sent'
             except Exception as e:
-                logging.error(f"Error sending message to user {user.id}: {e}")
+                logger.error(f"Error sending message to user {user.id}: {e}")
                 user_message.status = 'error'
 
         session.commit()
