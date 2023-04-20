@@ -11,6 +11,8 @@ config = configparser.ConfigParser(os.environ)
 config_path = os.path.dirname(__file__) + '/../config/' #we need this trick to get path to config folder
 config.read(config_path + 'settings.ini')
 
+logger = logging.get_logger()
+
 async def add_message_to_queue(message, is_test=False, session=None):
     new_message = MessageQueue(message=message, is_test=is_test)
     session.add(new_message)
@@ -41,7 +43,7 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
         message = user_message.message_queue
         user = session.query(User).filter(User.id == user_message.user_id).first()
 
-        message_sent = False
+        message_processed = False
 
         for dialog in dialogs:
             if dialog.id == user.id:
@@ -49,17 +51,21 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                     await client.send_message(user.id, message.message, link_preview=False)
                     user_message.sent_at = datetime.datetime.utcnow()
                     user_message.status = 'sent'
+                    message_processed = True
                 except Exception as e:
                     logging.error(f"Error sending message to user {user.id}: {e}")
                     user_message.status = 'error'
+                    message_processed
                 finally:
-                    if message_sent == False:
-                        logging.error(f"Error sending message to user {user.id}: Haven't find this user in the list of dialogs")
-                        user_message.status = 'error'
-
-                    session.commit()
+                    break
             else:
                 continue
+
+        if message_processed == False:
+            logger.error(f"Error sending message to user {user.id}: Haven't find this user in the list of dialogs")
+            user_message.status = 'error'
+
+        session.commit()
 
         # You can add a delay here if needed to avoid being flagged as spam
         await asyncio.sleep(delay_between_messages)
