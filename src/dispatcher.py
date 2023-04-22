@@ -136,8 +136,6 @@ async def handle_default(event):
         user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
         async with client.action(event.chat_id, 'typing'):
-            userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None, usage_count=1)
-
             conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
             response, prompt_tokens, completion_tokens = await openai_helper.generate_response(conversation_history,
                                                                                                user.memory,
@@ -145,7 +143,7 @@ async def handle_default(event):
 
             userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None,
                                                               prompt_tokens=prompt_tokens,
-                                                              completion_tokens=completion_tokens)
+                                                              completion_tokens=completion_tokens, usage_count=1)
 
             session.commit()
 
