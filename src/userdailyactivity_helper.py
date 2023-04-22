@@ -1,5 +1,8 @@
 import src.db_helper as db_helper
 import src.logging_helper as logging
+import src.amplitude_helper as amplitude_helper
+
+
 
 import traceback
 import configparser
@@ -13,6 +16,16 @@ logger = logging.get_logger()
 
 def update_userdailyactivity(user_id, command=None, usage_count=None, prompt_tokens=None, completion_tokens=None):
     try:
+        amplitude_helper.track(
+            user_id=user_id,
+            event_type = command,
+            event_properties={
+                'usage_count': usage_count,
+                'prompt_tokens': prompt_tokens,
+                'completion_tokens': completion_tokens
+            }
+        )
+
         with db_helper.session_scope() as session:
             user_daily_activity = session.query(db_helper.UserDailyActivity).filter_by(user_id=user_id, command_name=command).first()
 
@@ -32,5 +45,5 @@ def update_userdailyactivity(user_id, command=None, usage_count=None, prompt_tok
             session.commit()
 
     except Exception as e:
-        logger.error(f"Error: {traceback.format_exc()}")
+            logger.error(f"Error: {traceback.format_exc()}")
         # await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
