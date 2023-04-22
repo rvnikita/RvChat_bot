@@ -30,11 +30,11 @@ def update_userdailyactivity(user_id, command=None, usage_count=None, prompt_tok
             user_daily_activity = session.query(db_helper.UserDailyActivity).filter_by(user_id=user_id, command_name=command).first()
 
             if user_daily_activity is None:
-                user_daily_activity = db_helper.UserDailyActivity(user_id=user_id, command_name=command, usage_count=0, prompt_tokens=0, completion_tokens=0)
+                user_daily_activity = db_helper.UserDailyActivity(user_id=user_id, command_name=command, usage_count=usage_count, prompt_tokens=0, completion_tokens=0)
                 session.add(user_daily_activity)
-
-            if usage_count is not None:
-                user_daily_activity.usage_count += usage_count
+            else:
+                if usage_count is not None:
+                    user_daily_activity.usage_count += usage_count
 
             if prompt_tokens is not None:
                 user_daily_activity.prompt_tokens += prompt_tokens
