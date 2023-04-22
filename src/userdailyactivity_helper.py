@@ -21,7 +21,6 @@ def update_userdailyactivity(user_id, command=None, usage_count=None, prompt_tok
             user_id=user_id,
             event_type = command,
             event_properties={
-                'usage_count': usage_count,
                 'prompt_tokens': prompt_tokens,
                 'completion_tokens': completion_tokens
             }
