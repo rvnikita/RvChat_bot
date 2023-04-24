@@ -227,6 +227,7 @@ async def handle_announcement_command(event, session):
 
 
 async def on_new_message(event):
+    #TODO:HIGH protect from spam attack from users (if they send to much messages in a short period of time)
     try:
         with db_helper.session_scope() as session:
             if event.is_private != True:
