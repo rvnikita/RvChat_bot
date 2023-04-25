@@ -125,6 +125,7 @@ Don't forget to subscribe to ❗️@rvnikita_blog ❗ - Nikita Rvachev's blog. i
     await safe_send_message(event.chat_id, welcome_text)
 
 async def handle_default(event):
+    #TODO:HIGH add url extraction (think how to work if text size is bigger then prompt limit)
     if event.text.startswith('/'):
         userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/unknown", usage_count=1)
 
