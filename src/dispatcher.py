@@ -88,6 +88,8 @@ async def handle_image_command(event, session):
     prompt = event.text[len('/image'):].strip()
 
     if prompt:
+        await safe_send_message(event.chat_id, "Generating images...\n(can take 1-2 minutes)")
+
         images_url = openai_helper.generate_image(prompt)
         if images_url is not None:
             for image_url in images_url:
