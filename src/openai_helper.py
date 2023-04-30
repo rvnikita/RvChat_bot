@@ -126,7 +126,7 @@ async def generate_response(conversation_history, memory = None, model=None):
     try:
         prompt = []
 
-        if memory is not None:
+        if memory is not None and len(memory) > 0:
             prompt.append({"role": "system", "content": memory})
 
         #TODO:MED: maybe we need to put this in DB with some predefined prepromtps
