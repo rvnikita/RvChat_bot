@@ -59,7 +59,7 @@ class MessageQueue(Base):
     user_messages = relationship("UserMessage", back_populates="message_queue")
 
 class UserMessage(Base):
-    id = Column(BigInteger, primary_key=True)
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
     user_id = Column(BigInteger, ForeignKey(User.__table__.c.id))
     message_queue_id = Column(BigInteger, ForeignKey(MessageQueue.__table__.c.id))
 
