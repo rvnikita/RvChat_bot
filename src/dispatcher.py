@@ -14,6 +14,7 @@ import datetime
 import re
 import configparser
 import traceback
+import aiohttp
 
 config = configparser.ConfigParser(os.environ)
 config_path = os.path.dirname(__file__) + '/../config/' #we need this trick to get path to config folder
@@ -34,6 +35,13 @@ async def safe_send_message(chat_id, message, link_preview=False):
         message_chunks = [message[i:i + 4096] for i in range(0, len(message), 4096)]
         for message_chunk in message_chunks:
             await client.send_message(chat_id, message_chunk, link_preview=link_preview)
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        await client.send_message(chat_id, f"Error: {e}. Please try again later.")
+
+async def safe_send_image(chat_id, image):
+    try:
+        await client.send_file(chat_id, image)
     except Exception as e:
         logger.error(f"Error: {traceback.format_exc()}")
         await client.send_message(chat_id, f"Error: {e}. Please try again later.")
@@ -69,6 +77,25 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
             break
 
     return messages[::-1]
+
+async def handle_image_command(event, session):
+    if not event.text.startswith('/image'):
+        return
+    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/image', usage_count=1)
+
+    user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
+
+    prompt = event.text[len('/image'):].strip()
+
+    if prompt:
+        images_url = openai_helper.generate_image(prompt)
+        if images_url is not None:
+            for image_url in images_url:
+                async with aiohttp.ClientSession() as httpsession:
+                    async with httpsession.get(image_url['url']) as response:
+                        await safe_send_image(event.chat_id, await response.read())
+    else:
+        await safe_send_message(event.chat_id, "Please provide a prompt for the image")
 
 async def handle_remember_command(event, session):
     if not event.text.startswith('/remember'):
@@ -294,6 +321,10 @@ async def on_new_message(event):
 
             if event.text.startswith('/summary') or event.text.startswith('/s '):
                 await handle_summary_command(event)
+                return
+
+            if event.text.startswith('/image'):
+                await handle_image_command(event, session=session)
                 return
 
             await handle_default(event)

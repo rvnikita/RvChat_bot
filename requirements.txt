@@ -5,3 +5,4 @@ psycopg2
 alembic
 bs4
 amplitude-analytics
+aiohttp

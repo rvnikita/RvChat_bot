@@ -15,6 +15,22 @@ config.read(config_path + 'settings.ini')
 
 logger = logging.get_logger()
 
+openai.api_key = config['OPENAI']['KEY']
+
+def generate_image(prompt, size="1024x1024"):
+    try:
+        response = openai.Image.create(
+            prompt=prompt,
+            n=4,
+            size=size
+        )
+
+        return response['data']
+
+    except Exception as e:
+        logger.error(e)
+        return None
+
 def get_url_content(text):
     # Check if the input text is a valid URL
     try:
@@ -50,8 +66,6 @@ def get_summary_from_text(content_body, content_title=None, char_limit=2000, mod
         return "Sorry, content is way to big (more than 120 000 symbols).", 0, 0
 
     prompt_tokens, completion_tokens = 0, 0
-
-    openai.api_key = config['OPENAI']['KEY']
 
     def chunk_text(text, chunk_size=2000):
         return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
