@@ -141,7 +141,8 @@ async def handle_start_command(event):
 Hi! I'm a bot that uses OpenAI's GPT-4 to talk to you.
 Just write me a message and I'll try to respond to it or use one of the following commands.
 
-Commands: 
+Commands:
+/image [TEXT]        - generate a set of images based on the text.
 /remember [TEXT]     - set a memory that will be used in the conversation.
 /memory              - show the current memory.
 /clear               - clear the conversation history (don't use previous messages to generate a response).
