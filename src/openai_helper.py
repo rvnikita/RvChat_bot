@@ -29,6 +29,7 @@ def generate_image(prompt, size="1024x1024"):
 
     except Exception as e:
         logger.error(e)
+        raise e
         return None
 
 def get_url_content(text):

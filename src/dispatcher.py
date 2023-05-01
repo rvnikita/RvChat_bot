@@ -90,12 +90,18 @@ async def handle_image_command(event, session):
     if prompt:
         await safe_send_message(event.chat_id, "Generating images...\n(can take 1-2 minutes)")
 
-        images_url = openai_helper.generate_image(prompt)
-        if images_url is not None:
-            for image_url in images_url:
-                async with aiohttp.ClientSession() as httpsession:
-                    async with httpsession.get(image_url['url']) as response:
-                        await safe_send_image(event.chat_id, await response.read())
+        try:
+            images_url = openai_helper.generate_image(prompt)
+            if images_url is not None:
+                for image_url in images_url:
+                    async with aiohttp.ClientSession() as httpsession:
+                        async with httpsession.get(image_url['url']) as response:
+                            await safe_send_image(event.chat_id, await response.read())
+            else:
+                await safe_send_message(event.chat_id, "Error: Failed to generate image with this text. Please try again later.")
+        except Exception as e:
+            logger.error(f"Error: {traceback.format_exc()}")
+            await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
     else:
         await safe_send_message(event.chat_id, "Please provide a prompt for the image")
 
