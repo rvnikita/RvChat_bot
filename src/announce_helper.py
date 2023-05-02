@@ -53,13 +53,14 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                     user_message.sent_at = datetime.datetime.utcnow()
                     user_message.status = 'sent'
                     message_processed = True
-                except FloodWaitError as e:
-                    logger.warning(f"Too many requests, stopping the script. Error details: {e}")
-                    return
                 except Exception as e:
-                    logger.error(f"Error sending message to user {user.id}: {e}")
-                    user_message.status = 'error'
-                    message_processed = True
+                    if "Too many requests (caused by SendMessageRequest)" in str(e):
+                        logger.warning(f"Too many requests, stopping the script. Error details: {e}")
+                        return
+                    else:
+                        logger.error(f"Error sending message to user {user.id}: {e}")
+                        user_message.status = 'error'
+                        message_processed = True
                 finally:
                     break
             else:
@@ -70,12 +71,13 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                 await client.send_message(user.id, message.message, link_preview=False)
                 user_message.sent_at = datetime.datetime.utcnow()
                 user_message.status = 'sent'
-            except FloodWaitError as e:
-                logger.warning(f"Too many requests, stopping the script. Error details: {e}")
-                return
             except Exception as e:
-                logger.info(f"Error sending message to user {user.id}: {e}")
-                user_message.status = 'error'
+                if "Too many requests (caused by SendMessageRequest)" in str(e):
+                    logger.warning(f"Too many requests, stopping the script. Error details: {e}")
+                    return
+                else:
+                    logger.error(f"Error sending message to user {user.id}: {e}")
+                    user_message.status = 'error'
 
         session.commit()
 
