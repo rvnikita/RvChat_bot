@@ -6,6 +6,7 @@ import asyncio
 import os
 import configparser
 import datetime
+from sqlalchemy.sql.expression import func
 
 
 config = configparser.ConfigParser(os.environ)
@@ -34,6 +35,7 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
         session.query(UserMessage)
         .filter(UserMessage.status == 'queued')
         .join(MessageQueue)
+        .order_by(func.random())  # Add this line to randomize the order of the rows
         .limit(messages_to_send)
         .all()
     )
