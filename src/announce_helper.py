@@ -61,6 +61,7 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                             user_message.error_count += 1
                             session.commit()
                             logger.warning(f"Too many requests, stopping the script. Error details: {e}")
+                            message_processed = True
                             return
                         else:
                             logger.warning(f"Too many requests more then MAX_ERROR_COUNT={int(config['ANNOUNCE']['MAX_ERROR_COUNT'])}. Error details: {e}")
