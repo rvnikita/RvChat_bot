@@ -64,6 +64,7 @@ class UserMessage(Base):
     message_queue_id = Column(BigInteger, ForeignKey(MessageQueue.__table__.c.id))
 
     sent_at = Column(DateTime, nullable=True)
+    error_count = Column(Integer, default=0, nullable=False)
     status = Column(String, default='queued', nullable=False)
 
     user = relationship("User", back_populates="user_messages")

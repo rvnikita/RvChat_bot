@@ -57,8 +57,16 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                     message_processed = True
                 except Exception as e:
                     if "Too many requests (caused by SendMessageRequest)" in str(e):
-                        logger.warning(f"Too many requests, stopping the script. Error details: {e}")
-                        return
+                        if user_message.error_count < config['ANNOUNCE']['MAX_ERROR_COUNT']:
+                            user_message.error_count += 1
+                            session.commit()
+                            logger.warning(f"Too many requests, stopping the script. Error details: {e}")
+                            return
+                        else:
+                            logger.warning(f"Too many requests more then MAX_ERROR_COUNT={config['ANNOUNCE']['MAX_ERROR_COUNT']}. Error details: {e}")
+                            user_message.status = 'error'
+                            message_processed = True
+                            return
                     else:
                         logger.error(f"Error sending message to user {user.id}: {e}")
                         user_message.status = 'error'
@@ -75,8 +83,15 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                 user_message.status = 'sent'
             except Exception as e:
                 if "Too many requests (caused by SendMessageRequest)" in str(e):
-                    logger.warning(f"Too many requests, stopping the script. Error details: {e}")
-                    return
+                    if user_message.error_count < config['ANNOUNCE']['MAX_ERROR_COUNT']:
+                        user_message.error_count += 1
+                        session.commit()
+                        logger.warning(f"Too many requests, stopping the script. Error details: {e}")
+                        return
+                    else:
+                        logger.warning(f"Too many requests more then MAX_ERROR_COUNT={config['ANNOUNCE']['MAX_ERROR_COUNT']}. Error details: {e}")
+                        user_message.status = 'error'
+                        return
                 else:
                     logger.error(f"Error sending message to user {user.id}: {e}")
                     user_message.status = 'error'
