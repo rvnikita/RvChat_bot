@@ -79,194 +79,222 @@ async def get_last_x_messages(client, channel_id, max_tokens = 4000):
     return messages[::-1]
 
 async def handle_image_command(event, session):
-    if not event.text.startswith('/image'):
-        return
-    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/image', usage_count=1)
+    try:
+        if not event.text.startswith('/image'):
+            return
+        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/image', usage_count=1)
 
-    user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
-
-    prompt = event.text[len('/image'):].strip()
-
-    if prompt:
-        await safe_send_message(event.chat_id, "Generating images...\n(can take 1-2 minutes)")
-
-        try:
-            images_url = openai_helper.generate_image(prompt)
-            if images_url is not None:
-                for image_url in images_url:
-                    async with aiohttp.ClientSession() as httpsession:
-                        async with httpsession.get(image_url['url']) as response:
-                            await safe_send_image(event.chat_id, await response.read())
-            else:
-                await safe_send_message(event.chat_id, "Error: Failed to generate image with this text. Please try again later.")
-        except Exception as e:
-            logger.error(f"Error: {traceback.format_exc()}")
-            await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
-    else:
-        await safe_send_message(event.chat_id, "Please provide a prompt for the image")
-
-async def handle_remember_command(event, session):
-    if not event.text.startswith('/remember'):
-        return
-
-    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/remember', usage_count=1)
-
-    user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
-
-    memory_text = event.text[len('/remember'):].strip()
-
-    if memory_text:
-        user.memory = memory_text
-        await safe_send_message(event.chat_id, f"Memory has been set to: '{memory_text}'")
-    else:
-        user.memory = ''
-        await safe_send_message(event.chat_id, "Memory has been cleared")
-
-    session.commit()
-
-async def handle_memory_command(event, session):
-    if not event.text.startswith('/memory'):
-        return
-
-    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/memory', usage_count=1)
-
-    user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
-
-    if user.memory:
-        await safe_send_message(event.chat_id, f"Current memory: '{user.memory}'")
-    else:
-        await safe_send_message(event.chat_id, "Memory is not set. If you'd like to set a memory, you can do so by typing /remember followed by the text you'd like to use as the memory.")
-
-async def handle_start_command(event):
-
-
-
-    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/start', usage_count=1)
-
-    welcome_text = """
-Hi! I'm a bot that uses OpenAI's GPT-4 to talk to you.
-Just write me a message and I'll try to respond to it or use one of the following commands.
-
-Commands:
-/image [TEXT]        - generate a set of images based on the text.
-/remember [TEXT]     - set a memory that will be used in the conversation.
-/memory              - show the current memory.
-/clear               - clear the conversation history (don't use previous messages to generate a response).
-/help                - show this message.
-/s or /summary       - get summary of the text or url. E.g. /summary https://openai.com/product/gpt-4
-
-Don't forget to subscribe to ❗️@rvnikita_blog ❗ - Nikita Rvachev's blog. if you want to get more updates about GPT-4, AI and this bot.
-        """
-
-    await safe_send_message(event.chat_id, welcome_text)
-
-async def handle_default(event):
-    #TODO:HIGH add url extraction (think how to work if text size is bigger then prompt limit)
-    if event.text.startswith('/'):
-        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/unknown", usage_count=1)
-
-        await safe_send_message(event.chat_id, "Unknown command")
-        await handle_start_command(event)
-        return
-
-    with db_helper.session_scope() as session:
         user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
-        async with client.action(event.chat_id, 'typing'):
-            conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
-            response, prompt_tokens, completion_tokens, google_used = await openai_helper.generate_response(conversation_history,
-                                                                                               user.memory,
-                                                                                               model=user.openai_model)
+        prompt = event.text[len('/image'):].strip()
 
-            userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None,
-                                                              prompt_tokens=prompt_tokens,
-                                                              completion_tokens=completion_tokens, usage_count=1)
+        if prompt:
+            await safe_send_message(event.chat_id, "Generating images...\n(can take 1-2 minutes)")
 
-            if google_used == True:
-                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/google", usage_count=1)
+            try:
+                images_url = openai_helper.generate_image(prompt)
+                if images_url is not None:
+                    for image_url in images_url:
+                        async with aiohttp.ClientSession() as httpsession:
+                            async with httpsession.get(image_url['url']) as response:
+                                await safe_send_image(event.chat_id, await response.read())
+                else:
+                    await safe_send_message(event.chat_id, "Error: Failed to generate image with this text. Please try again later.")
+            except Exception as e:
+                logger.error(f"Error: {traceback.format_exc()}")
+                await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
+        else:
+            await safe_send_message(event.chat_id, "Please provide a prompt for the image")
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
 
-            session.commit()
-
-    await safe_send_message(event.chat_id, response)
-
-async def handle_summary_command(event):
-    if event.text.startswith('/summary'):
-        url_or_text = event.text[len('/summary'):].strip()
-    elif event.text.startswith('/s '):
-        url_or_text = event.text[len('/s '):].strip()
-    else:
-        return
-
-    #TODO:HIGH: we need to calculate tokens here with special library
-    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/summary', usage_count=1)
-
-    # check if it's a url_or_text is empty (only spaces,tabs or nothing)
-    if re.match(r"^[\s\t]*$", url_or_text):
-        await safe_send_message(event.chat_id, "You need to provide an url or text after /summary get summary. E.g. /summary https://openai.com/product/gpt-4")
-        return
-
-    if url_or_text is None:
-        await safe_send_message(event.chat_id, "You need to provide an url or text after /summary get summary. E.g. /summary https://openai.com/product/gpt-4")
-        return
-
-    await safe_send_message(event.chat_id, "Generating summary...\n(can take 2-3 minutes for big pages)")
-
-    async with client.action(event.chat_id, 'typing', delay=5):
-
-        try:
-            url_content_title, url_content_body = openai_helper.get_url_content(url_or_text)
-        except Exception as e:
-            logger.error(f"Error: {traceback.format_exc()}")
-            await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
+async def handle_remember_command(event, session):
+    try:
+        if not event.text.startswith('/remember'):
             return
+
+        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/remember', usage_count=1)
+
+        user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
+
+        memory_text = event.text[len('/remember'):].strip()
+
+        if memory_text:
+            user.memory = memory_text
+            await safe_send_message(event.chat_id, f"Memory has been set to: '{memory_text}'")
+        else:
+            user.memory = ''
+            await safe_send_message(event.chat_id, "Memory has been cleared")
+
+        session.commit()
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
+
+async def handle_memory_command(event, session):
+    try:
+        if not event.text.startswith('/memory'):
+            return
+
+        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/memory', usage_count=1)
+
+        user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
+
+        if user.memory:
+            await safe_send_message(event.chat_id, f"Current memory: '{user.memory}'")
+        else:
+            await safe_send_message(event.chat_id, "Memory is not set. If you'd like to set a memory, you can do so by typing /remember followed by the text you'd like to use as the memory.")
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
+
+async def handle_start_command(event):
+    try:
+        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/start', usage_count=1)
+
+        welcome_text = """
+    Hi! I'm a bot that uses OpenAI's GPT-4 to talk to you.
+    Just write me a message and I'll try to respond to it or use one of the following commands.
+    
+    Commands:
+    /image [TEXT]        - generate a set of images based on the text.
+    /remember [TEXT]     - set a memory that will be used in the conversation.
+    /memory              - show the current memory.
+    /clear               - clear the conversation history (don't use previous messages to generate a response).
+    /help                - show this message.
+    /s or /summary       - get summary of the text or url. E.g. /summary https://openai.com/product/gpt-4
+    
+    Don't forget to subscribe to ❗️@rvnikita_blog ❗ - Nikita Rvachev's blog. if you want to get more updates about GPT-4, AI and this bot.
+            """
+
+        await safe_send_message(event.chat_id, welcome_text)
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
+
+async def handle_default(event):
+    try:
+        #TODO:HIGH add url extraction (think how to work if text size is bigger then prompt limit)
+        if event.text.startswith('/'):
+            userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/unknown", usage_count=1)
+
+            await safe_send_message(event.chat_id, "Unknown command")
+            await handle_start_command(event)
+            return
+
         with db_helper.session_scope() as session:
             user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
 
-            # check if it's a url or a text
-            if url_content_body is not None:  # so that was a valid url
-                summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_content_body, url_content_title, model=user.openai_model)
-            else:  # so that was a text
-                # FIXME: we can get url_content_body = None even for valid url. So this else is not 100% correct
-                summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_or_text, model=user.openai_model)
+            async with client.action(event.chat_id, 'typing'):
+                conversation_history = await get_last_x_messages(client, event.chat_id, 4000)
+                response, prompt_tokens, completion_tokens, google_used = await openai_helper.generate_response(conversation_history,
+                                                                                                   user.memory,
+                                                                                                   model=user.openai_model)
 
-            if prompt_tokens != 0:
-                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/summary', prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
+                userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command=None,
+                                                                  prompt_tokens=prompt_tokens,
+                                                                  completion_tokens=completion_tokens, usage_count=1)
 
-            await safe_send_message(event.chat_id, summary)
+                if google_used == True:
+                    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command="/google", usage_count=1)
+
+                session.commit()
+
+        await safe_send_message(event.chat_id, response)
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
+
+async def handle_summary_command(event):
+    try:
+        if event.text.startswith('/summary'):
+            url_or_text = event.text[len('/summary'):].strip()
+        elif event.text.startswith('/s '):
+            url_or_text = event.text[len('/s '):].strip()
+        else:
+            return
+
+        #TODO:HIGH: we need to calculate tokens here with special library
+        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/summary', usage_count=1)
+
+        # check if it's a url_or_text is empty (only spaces,tabs or nothing)
+        if re.match(r"^[\s\t]*$", url_or_text):
+            await safe_send_message(event.chat_id, "You need to provide an url or text after /summary get summary. E.g. /summary https://openai.com/product/gpt-4")
+            return
+
+        if url_or_text is None:
+            await safe_send_message(event.chat_id, "You need to provide an url or text after /summary get summary. E.g. /summary https://openai.com/product/gpt-4")
+            return
+
+        await safe_send_message(event.chat_id, "Generating summary...\n(can take 2-3 minutes for big pages)")
+
+        async with client.action(event.chat_id, 'typing', delay=5):
+
+            try:
+                url_content_title, url_content_body = openai_helper.get_url_content(url_or_text)
+            except Exception as e:
+                logger.error(f"Error: {traceback.format_exc()}")
+                await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
+                return
+            with db_helper.session_scope() as session:
+                user = session.query(db_helper.User).filter_by(id=event.chat_id).first()
+
+                # check if it's a url or a text
+                if url_content_body is not None:  # so that was a valid url
+                    summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_content_body, url_content_title, model=user.openai_model)
+                else:  # so that was a text
+                    # FIXME: we can get url_content_body = None even for valid url. So this else is not 100% correct
+                    summary, prompt_tokens, completion_tokens = openai_helper.get_summary_from_text(url_or_text, model=user.openai_model)
+
+                if prompt_tokens != 0:
+                    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/summary', prompt_tokens=prompt_tokens, completion_tokens=completion_tokens)
+
+                await safe_send_message(event.chat_id, summary)
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
 
 async def handle_test_announcement_command(event, session):
-    if not event.text.startswith('/test_announcement'):
-        return
+    try:
+        if not event.text.startswith('/test_announcement'):
+            return
 
-    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/test_announcement', usage_count=1)
+        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/test_announcement', usage_count=1)
 
-    if event.sender_id != int(config['TELEGRAM']['ADMIN_ID']):
-        return
+        if event.sender_id != int(config['TELEGRAM']['ADMIN_ID']):
+            return
 
-    announcement_text = event.text[len('/test_announcement'):].strip()
-    if announcement_text:
-        await announce_helper.add_message_to_queue(announcement_text, is_test=True, session=session)
-        await safe_send_message(event.chat_id, "Test announcement added to queue")
-    else:
-        await safe_send_message(event.chat_id, "Please provide a text after /test_announcement. E.g. /test_announcement Hello, this is a test announcement!")
+        announcement_text = event.text[len('/test_announcement'):].strip()
+        if announcement_text:
+            await announce_helper.add_message_to_queue(announcement_text, is_test=True, session=session)
+            await safe_send_message(event.chat_id, "Test announcement added to queue")
+        else:
+            await safe_send_message(event.chat_id, "Please provide a text after /test_announcement. E.g. /test_announcement Hello, this is a test announcement!")
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
 
 async def handle_announcement_command(event, session):
-    if not event.text.startswith('/announcement'):
-        return
+    try:
+        if not event.text.startswith('/announcement'):
+            return
 
-    userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/announcement', usage_count=1)
+        userdailyactivity_helper.update_userdailyactivity(user_id=event.chat_id, command='/announcement', usage_count=1)
 
-    #could be used only by admins
-    if event.sender_id != int(config['TELEGRAM']['ADMIN_ID']):
-        return
+        #could be used only by admins
+        if event.sender_id != int(config['TELEGRAM']['ADMIN_ID']):
+            return
 
-    announcement_text = event.text[len('/announcement'):].strip()
-    if announcement_text:
-        await announce_helper.add_message_to_queue(announcement_text, is_test=False, session=session)
-        await safe_send_message(event.chat_id, "Announcement added to queue")
-    else:
-        await safe_send_message(event.chat_id, "Please provide a text after /announcement. E.g. /announcement Hello, this is an announcement!")
-
+        announcement_text = event.text[len('/announcement'):].strip()
+        if announcement_text:
+            await announce_helper.add_message_to_queue(announcement_text, is_test=False, session=session)
+            await safe_send_message(event.chat_id, "Announcement added to queue")
+        else:
+            await safe_send_message(event.chat_id, "Please provide a text after /announcement. E.g. /announcement Hello, this is an announcement!")
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
 
 async def on_new_message(event):
     #TODO:HIGH protect from spam attack from users (if they send to much messages in a short period of time)
