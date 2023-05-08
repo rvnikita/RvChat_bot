@@ -181,7 +181,7 @@ async def generate_response(conversation_history, memory = None, model=None):
                     messages=prompt
                 )
 
-                return response.choices[0].message.content.strip(), response.usage.prompt_tokens, response.usage.completion_tokens
+                return response.choices[0].message.content.strip(), response.usage.prompt_tokens, response.usage.completion_tokens, True if shortened_google_search_results > 0 else False
 
             except Exception as e:
                 if attempt < max_attempts - 1:
@@ -192,10 +192,10 @@ async def generate_response(conversation_history, memory = None, model=None):
                 else:
                     logger.error(f"Error: {traceback.format_exc()}")
                     reply_text = f"Error: {e}. Please try again later."
-                    return reply_text, 0, 0
+                    return reply_text, 0, 0, False
 
     except Exception as e:
         logger.error(f"Error: {traceback.format_exc()}")
         reply_text = f"Error: {e}. Please try again later."
-        return reply_text, 0, 0
+        return reply_text, 0, 0, False
 
