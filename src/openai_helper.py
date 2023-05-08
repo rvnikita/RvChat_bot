@@ -168,7 +168,7 @@ async def generate_response(conversation_history, memory = None, model=None):
             prompt.append(message)
 
         if len(shortened_google_search_results) > 0:
-            prompt.append({"role": "system", "content": "Here are some results from Google Search: " + ', '.join(shortened_google_search_results)})
+            prompt.append({"role": "system", "content": "Please provide an answer using information from the following Google search results and specify the source links if you use them for your answer: " + ', '.join(shortened_google_search_results)})
 
 
         delay_between_attempts = 5
