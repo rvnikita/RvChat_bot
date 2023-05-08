@@ -11,4 +11,8 @@ config.read(config_path + 'settings.ini')
 def google_search(search_term, api_key = config['GOOGLE']['KEY'], cse_id = config['GOOGLE']['CSE_ID'], **kwargs):
     service = build("customsearch", "v1", developerKey=api_key)
     res = service.cse().list(q=search_term, cx=cse_id, **kwargs).execute()
-    return res['items']
+
+    if 'items' in res:
+        return res['items']
+    else:
+        return None
