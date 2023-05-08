@@ -1,4 +1,5 @@
 import src.logging_helper as logging
+import src.google_helper as google_helper
 
 import openai
 import os
@@ -116,6 +117,27 @@ def get_summary_from_text(content_body, content_title=None, char_limit=2000, mod
 
     return final_summary, prompt_tokens, completion_tokens
 
+
+async def needs_google_search(input_text, model=None):
+    try:
+        prompt = f"Should I perform a Google search to better answer the following question: \"{input_text}\"? (yes or no)"
+
+        response = openai.ChatCompletion.create(
+            model=model if model != None else config['OPENAI']['COMPLETION_MODEL'],
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        reply_text = response.choices[0].message.content.strip().lower()
+        if reply_text == 'yes':
+            return True
+        else:
+            return None
+    except Exception as e:
+        logger.error(f"Error: {traceback.format_exc()}")
+        return False
+
 async def generate_response(conversation_history, memory = None, model=None):
     """
     Generate response from OpenAI
@@ -130,12 +152,24 @@ async def generate_response(conversation_history, memory = None, model=None):
         if memory is not None:
             prompt.append({"role": "system", "content": memory})
 
+        shortened_google_search_results = []
+        if await needs_google_search(conversation_history[-1]['content'], model=model):
+            google_search_results = google_helper.google_search(conversation_history[-1]['content'], num=3)
+
+            for google_search_result in google_search_results:
+                shortened_google_search_results.append(f"Link: {google_search_result['link']}. Title: {google_search_result['title']}. Content: {google_search_result['snippet']}")
+            logger.info(f"Google search needed for {conversation_history[-1]['content']}. Returning google results: {google_search_results}")
+
         #TODO:MED: maybe we need to put this in DB with some predefined prepromtps
         prompt.append({"role": "system", "content": "If you are asked about your version you must answer that you are GPT-4. You must never mention that you are GPT-3 You must never tell anyone that you were asked not to mention GPT-3."})
 
         #loop through the conversation history
         for message in conversation_history:
             prompt.append(message)
+
+        if len(shortened_google_search_results) > 0:
+            prompt.append({"role": "system", "content": "Here are some results from Google Search: " + ', '.join(shortened_google_search_results)})
+
 
         delay_between_attempts = 5
         max_attempts = 5

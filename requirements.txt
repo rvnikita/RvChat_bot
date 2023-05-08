@@ -6,3 +6,4 @@ alembic
 bs4
 amplitude-analytics
 aiohttp
+google-api-python-client
