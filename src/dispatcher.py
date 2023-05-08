@@ -243,6 +243,7 @@ async def handle_test_announcement_command(event, session):
     announcement_text = event.text[len('/test_announcement'):].strip()
     if announcement_text:
         await announce_helper.add_message_to_queue(announcement_text, is_test=True, session=session)
+        await safe_send_message(event.chat_id, "Test announcement added to queue")
     else:
         await safe_send_message(event.chat_id, "Please provide a text after /test_announcement. E.g. /test_announcement Hello, this is a test announcement!")
 
@@ -259,6 +260,7 @@ async def handle_announcement_command(event, session):
     announcement_text = event.text[len('/announcement'):].strip()
     if announcement_text:
         await announce_helper.add_message_to_queue(announcement_text, is_test=False, session=session)
+        await safe_send_message(event.chat_id, "Announcement added to queue")
     else:
         await safe_send_message(event.chat_id, "Please provide a text after /announcement. E.g. /announcement Hello, this is an announcement!")
 
