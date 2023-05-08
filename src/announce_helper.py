@@ -71,7 +71,6 @@ async def process_message_queue(client, messages_to_send=10, delay_between_messa
                     else:
                         logger.error(f"Error sending message to user {user.id}: {e}")
                         user_message.status = 'error'
-                        message_processed = True
                 finally:
                     break
             else:
