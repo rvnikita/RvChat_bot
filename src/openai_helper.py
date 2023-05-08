@@ -153,7 +153,7 @@ async def generate_response(conversation_history, memory = None, model=None):
             prompt.append({"role": "system", "content": memory})
 
         shortened_google_search_results = []
-        if await needs_google_search(conversation_history[-1]['content'], model=model):
+        if conversation_history and await needs_google_search(conversation_history[-1]['content'], model=model):
             google_search_results = google_helper.google_search(conversation_history[-1]['content'], num=3)
 
             for google_search_result in google_search_results:
