@@ -7,20 +7,18 @@ config = configparser.ConfigParser(os.environ)
 config_path = os.path.dirname(__file__) + '/../config/' #we need this trick to get path to config folder
 config.read(config_path + 'settings.ini')
 
+LOGGING_FORMAT = os.getenv('ENV_LOGGING_FORMAT')
+
 class TelegramLoggerHandler(logging.Handler):
-    def __init__(self):
+    def __init__(self, chat_id):
         super().__init__()
+        self.chat_id = chat_id
 
     def emit(self, record):
-        # OVERWRITE LOG METHOD WITH OUR TELEGRAM LOGIC
-        # TODO:LOW: maybe it's better to rewrite this with bot.send_message
-        URL = f"https://api.telegram.org/bot{config['TELEGRAM']['KEY']}/sendMessage?chat_id={config['TELEGRAM']['ADMIN_ID']}&text={record}"
+        log_entry = self.format(record)
+        URL = f"https://api.telegram.org/bot{config['BOT']['KEY']}/sendMessage?chat_id={self.chat_id}&text={log_entry}"
+        requests.get(url=URL)
 
-        r = requests.get(url=URL)
-        data = r.json()
-
-        # TODO:LOW: check if we need to call original emit method
-        # super().emit(record)
 
 def get_logger():
     logger = logging.getLogger()
@@ -34,11 +32,19 @@ def get_logger():
         logger.setLevel(logging.ERROR)
     elif config['LOGGING']['LEVEL'] == 'CRITICAL':
         logger.setLevel(logging.CRITICAL)
-    handler = TelegramLoggerHandler()
-    # formatter = logging.Formatter(config['LOGGING']['FORMAT'])
-    # handler.setFormatter(formatter)
+
+    error_handler = TelegramLoggerHandler(config['LOGGING']['ERROR_CHAT_ID'])
+    error_handler.setLevel(logging.ERROR)
+    error_handler.setFormatter(logging.Formatter(LOGGING_FORMAT))
+
+    info_handler = TelegramLoggerHandler(config['LOGGING']['INFO_CHAT_ID'])
+    info_handler.setLevel(logging.DEBUG)
+    info_handler.setFormatter(logging.Formatter(LOGGING_FORMAT))
+
     if (logger.hasHandlers()):
         logger.handlers.clear()
-    logger.addHandler(handler)
+
+    logger.addHandler(error_handler)
+    logger.addHandler(info_handler)
 
     return logger
