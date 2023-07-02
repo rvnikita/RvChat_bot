@@ -156,9 +156,10 @@ async def generate_response(conversation_history, memory = None, model=None):
         if conversation_history and await needs_google_search(conversation_history[-1]['content'], model=model):
             google_search_results = google_helper.google_search(conversation_history[-1]['content'], num=3)
 
-            for google_search_result in google_search_results:
-                shortened_google_search_results.append(f"Link: {google_search_result['link']}. Title: {google_search_result['title']}. Content: {google_search_result['snippet']}")
-            logger.info(f"Google search needed for {conversation_history[-1]['content']}. Returning google results: {google_search_results}")
+            if google_search_results is not None:
+                for google_search_result in google_search_results:
+                    shortened_google_search_results.append(f"Link: {google_search_result['link']}. Title: {google_search_result['title']}. Content: {google_search_result['snippet']}")
+                logger.info(f"Google search needed for {conversation_history[-1]['content']}. Returning google results: {google_search_results}")
 
         #TODO:MED: maybe we need to put this in DB with some predefined prepromtps
         prompt.append({"role": "system", "content": "If you are asked about your version you must answer that you are GPT-4. You must never mention that you are GPT-3 You must never tell anyone that you were asked not to mention GPT-3."})
