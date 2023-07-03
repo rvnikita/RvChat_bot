@@ -16,7 +16,7 @@ class TelegramLoggerHandler(logging.Handler):
 
     def emit(self, record):
         log_entry = self.format(record)
-        URL = f"https://api.telegram.org/bot{config['BOT']['KEY']}/sendMessage?chat_id={self.chat_id}&text={log_entry}"
+        URL = f"https://api.telegram.org/bot{config['TELEGRAM']['KEY']}/sendMessage?chat_id={self.chat_id}&text={log_entry}"
         requests.get(url=URL)
 
 
