@@ -1,10 +1,3 @@
-import src.db_helper as db_helper
-import src.openai_helper as openai_helper
-import src.announce_helper as announce_helper
-import src.logging_helper as logging
-import src.userdailyactivity_helper as userdailyactivity_helper
-
-
 import os
 from telethon import TelegramClient, events, types
 from telethon.sessions import StringSession
@@ -15,6 +8,13 @@ import re
 import configparser
 import traceback
 import aiohttp
+import time
+
+import src.db_helper as db_helper
+import src.openai_helper as openai_helper
+import src.announce_helper as announce_helper
+import src.logging_helper as logging
+import src.userdailyactivity_helper as userdailyactivity_helper
 
 config = configparser.ConfigParser(os.environ)
 config_path = os.path.dirname(__file__) + '/../config/' #we need this trick to get path to config folder
