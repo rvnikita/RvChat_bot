@@ -376,17 +376,32 @@ async def on_new_message(event):
         logger.error(f"Error: {traceback.format_exc()}")
         await safe_send_message(event.chat_id, f"Error: {e}. Please try again later.")
 
+
 async def main():
     # Initialize the Telegram client
     # Connect and sign in using the phone number
 
     logger.info("Connecting to Telegram...")
 
-    await client.start()
+    backoff = 1
+    while True:
+        try:
+            await client.start()
+            client.add_event_handler(on_new_message, events.NewMessage)
+            await client.run_until_disconnected()
+            break
+        except Exception as e:
+            logger.error(f"Error: {traceback.format_exc()}")
+            logger.error("Session string was used from two different IPs. Regenerating new session string.")
+            logger.info(f"Retry connecting in {backoff} seconds...")
 
-    client.add_event_handler(on_new_message, events.NewMessage)
+            # Use this time to regenerate a new session string if necessary
+            # Remember to replace "regenerate_session_string()" with your actual function
+            # session_string = regenerate_session_string()
+            # client = TelegramClient(StringSession(session_string), API_ID, API_HASH)
 
-    await client.run_until_disconnected()
+            time.sleep(backoff)  # Wait for the specified backoff time
+            backoff *= 2  # Double the backoff time for the next retry
 
 if __name__ == '__main__':
     import asyncio
