@@ -11,6 +11,9 @@
 # Ignore session files
 *.session
 
+# Ignore __pychache__
+/src/__pychache__
+
 # Ignore .env file
 /config/.env
 
