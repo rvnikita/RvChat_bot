@@ -12,7 +12,7 @@
 *.session
 
 # Ignore __pychache__
-/src/__pychache__
+__pychache__/
 
 # Ignore .env file
 /config/.env
