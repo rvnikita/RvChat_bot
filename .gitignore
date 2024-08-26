@@ -20,3 +20,6 @@ alembic.ini
 
 # Ignore temp.py for testing
 /temp.py
+
+# Ignore vscode config
+.vscode/launch.json
